@@ -282,20 +282,22 @@
       return `${DAG_KORT[d.getDay()]} ${d.getDate()} ${MAAND_KORT[d.getMonth()]}`;
     }
 
-    // ══════════════════════════════════════════════════
-    // BEHEERDER: PDF bestandsnamen worden automatisch
-    // gegenereerd op basis van datum, formaat:
-    //   rw_di_10_mar.pdf
-    // Zorg dat je bestanden exact zo heten!
+    // Maakt bestandsnaam: 11-03-2026.pdf
+    function formatPdf(d) {
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const jj = d.getFullYear();
+      return `${dd}-${mm}-${jj}.pdf`;
+    }
+
     // Bouw de twee datum-knoppen dynamisch
-    // PDF bestanden zijn altijd: today.pdf en tomorrow.pdf
     function bouwKnoppen() {
       const dag1 = startdag();
       const dag2 = volgendeSchooldag(dag1);
 
       const daten = [
-        { datum: dag1, pdf: 'today.pdf' },
-        { datum: dag2, pdf: 'tomorrow.pdf' }
+        { datum: dag1, pdf: formatPdf(dag1) },
+        { datum: dag2, pdf: formatPdf(dag2) }
       ];
 
       const container = document.getElementById('dates');
