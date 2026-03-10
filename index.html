@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roosterwijzigingen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #1a1a1a;
+      --surface:   #242424;
+      --border:    #2e2e2e;
+      --accent:    #e8634a;   /* oranje-roze zoals BRIAS */
+      --accent2:   #d45a72;   /* roze variant */
+      --text:      #e8e0d8;
+      --muted:     #6b6560;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Header ── */
+    header {
+      width: 100%;
+      padding: 48px 24px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-sub {
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Date buttons ── */
+    .dates {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 40px;
+      width: 100%;
+      max-width: 320px;
+      padding: 0 24px;
+    }
+
+    .sectie-label {
+      width: 100%;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+
+    .sectie-spacer {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .date-btn {
+      width: 100%;
+      padding: 14px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--accent);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .date-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+
+    .date-btn:hover::before,
+    .date-btn.active::before {
+      opacity: 0.12;
+    }
+
+    .date-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .date-btn span { position: relative; z-index: 1; }
+
+    /* ── PDF viewer ── */
+    .pdf-container {
+      display: none;
+      width: 100%;
+      max-width: 900px;
+      margin: 32px 24px 48px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .pdf-container.visible { display: block; }
+
+    .pdf-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pdf-label {
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .pdf-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+    .pdf-close:hover { color: var(--accent); }
+
+    iframe {
+      width: 100%;
+      height: 80vh;
+      border: none;
+      display: block;
+    }
+
+    .no-pdf {
+      padding: 48px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: auto;
+      padding: 24px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-title">Roosterwijzigingen</div>
+    <div class="logo-sub">Altena College</div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════
+       BEHEERDER: voeg hier je datums + PDF-paden toe.
+       Kopieer een <button> regel en pas aan:
+         data-pdf="bestandsnaam.pdf"   ← PDF bestand (zet in zelfde map)
+         data-label="di 10 Mar"        ← tekst op de knop
+       ══════════════════════════════════════════════════ -->
+  <div class="dates" id="dates">
+    <!-- Wordt dynamisch gevuld door JavaScript -->
+    <div class="sectie-label">Roosterwijzigingen</div>
+
+    <!-- datum-knoppen komen hier via JS -->
+
+    <div class="sectie-spacer"></div>
+    <div class="sectie-label">Informatie</div>
+    <button class="date-btn" onclick="downloadInfobord()">
+      <span>Infobord</span>
+    </button>
+  </div>
+
+  <!-- PDF viewer -->
+  <div class="pdf-container" id="pdfContainer">
+    <div class="pdf-header">
+      <span class="pdf-label" id="pdfLabel"></span>
+      <button class="pdf-close" onclick="closePdf()">✕</button>
+    </div>
+    <iframe id="pdfFrame" title="Roosterwijziging PDF"></iframe>
+  </div>
+
+  <footer>empowered by Joey</footer>
+
+  <script>
+    const DAG_KORT  = ['zo','ma','di','wo','do','vr','za'];
+    const MAAND_KORT = ['jan','feb','mar','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+
+    // Geeft de volgende schooldag (ma-vr) na de gegeven datum
+    function volgendeSchooldag(d) {
+      const next = new Date(d);
+      do {
+        next.setDate(next.getDate() + 1);
+      } while (next.getDay() === 0 || next.getDay() === 6); // sla za(6) en zo(0) over
+      return next;
+    }
+
+    // Geeft de "actieve" startdag:
+    // - voor 20:00 → vandaag (als schooldag) anders morgen-schooldag
+    // - weekend → maandag
+    function startdag() {
+      const nu = new Date();
+      const dag = nu.getDay(); // 0=zo, 6=za
+
+      // Weekend → volgende schooldag (maandag)
+      if (dag === 0 || dag === 6) return volgendeSchooldag(nu);
+
+      // Doordeweeks na 20:00 → volgende schooldag
+      if (nu.getHours() >= 20) return volgendeSchooldag(nu);
+
+      // Anders gewoon vandaag
+      return nu;
+    }
+
+    // Maakt een leesbaar label: "di 10 Mar"
+    function formatLabel(d) {
+      return `${DAG_KORT[d.getDay()]} ${d.getDate()} ${MAAND_KORT[d.getMonth()]}`;
+    }
+
+    // ══════════════════════════════════════════════════
+    // BEHEERDER: PDF bestandsnamen worden automatisch
+    // gegenereerd op basis van datum, formaat:
+    //   rw_di_10_mar.pdf
+    // Zorg dat je bestanden exact zo heten!
+    // Bouw de twee datum-knoppen dynamisch
+    // PDF bestanden zijn altijd: today.pdf en tomorrow.pdf
+    function bouwKnoppen() {
+      const dag1 = startdag();
+      const dag2 = volgendeSchooldag(dag1);
+
+      const daten = [
+        { datum: dag1, pdf: 'today.pdf' },
+        { datum: dag2, pdf: 'tomorrow.pdf' }
+      ];
+
+      const container = document.getElementById('dates');
+
+      // Verwijder eventuele oude datum-knoppen
+      container.querySelectorAll('.datum-btn').forEach(b => b.remove());
+
+      // Voeg in vóór de spacer (zodat ze boven Informatie sectie blijven)
+      const spacer = container.querySelector('.sectie-spacer');
+
+      daten.forEach(({ datum, pdf }) => {
+        const label = formatLabel(datum);
+
+        const btn = document.createElement('button');
+        btn.className = 'date-btn datum-btn';
+        btn.setAttribute('data-pdf', pdf);
+        btn.setAttribute('data-label', label);
+        btn.onclick = function() { openPdf(this); };
+        btn.innerHTML = `<span>${label}</span>`;
+
+        container.insertBefore(btn, spacer);
+      });
+    }
+
+    function openPdf(btn) {
+      document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const pdf   = btn.getAttribute('data-pdf');
+      const label = btn.getAttribute('data-label');
+
+      const container = document.getElementById('pdfContainer');
+      const frame     = document.getElementById('pdfFrame');
+      const lbl       = document.getElementById('pdfLabel');
+
+      lbl.textContent = label;
+      frame.src = pdf;
+      container.classList.add('visible');
+
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function closePdf() {
+      document.getElementById('pdfContainer').classList.remove('visible');
+      document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('pdfFrame').src = '';
+    }
+
+    function downloadInfobord() {
+      const a = document.createElement('a');
+      a.href = 'infobord.pptx';
+      a.download = 'infobord.pptx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Start
+    bouwKnoppen();
+
+    // Hercheck elke minuut of het 20:00 is geworden en knoppen moeten updaten
+    setInterval(bouwKnoppen, 60 * 1000);
+  </script>
+
+</body>
+</html>
