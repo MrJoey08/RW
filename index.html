@@ -261,7 +261,7 @@
     }
 
     // Geeft de "actieve" startdag:
-    // - voor 20:00 → vandaag (als schooldag) anders morgen-schooldag
+    // - voor 16:30 → vandaag (als schooldag) anders morgen-schooldag
     // - weekend → maandag
     function startdag() {
       const nu = new Date();
@@ -270,8 +270,8 @@
       // Weekend → volgende schooldag (maandag)
       if (dag === 0 || dag === 6) return volgendeSchooldag(nu);
 
-      // Doordeweeks na 20:00 → volgende schooldag
-      if (nu.getHours() >= 20) return volgendeSchooldag(nu);
+      // Doordeweeks na 16:30 → volgende schooldag
+      if (nu.getHours() > 16 || (nu.getHours() === 16 && nu.getMinutes() >= 30)) return volgendeSchooldag(nu);
 
       // Anders gewoon vandaag
       return nu;
