@@ -124,8 +124,8 @@
     /* ── PDF viewer ── */
     .pdf-container {
       display: none;
-      width: 100%;
-      max-width: 900px;
+      width: calc(100% - 48px);
+      max-width: 700px;
       margin: 32px 24px 48px;
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -161,9 +161,18 @@
     }
     .pdf-close:hover { color: var(--accent); }
 
-    iframe {
+    .iframe-wrapper {
       width: 100%;
-      height: 80vh;
+      /* A4 verhouding: hoogte = breedte × 1.4142 */
+      aspect-ratio: 1 / 1.4142;
+      position: relative;
+    }
+
+    .iframe-wrapper iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       border: none;
       display: block;
     }
@@ -217,7 +226,9 @@
       <span class="pdf-label" id="pdfLabel"></span>
       <button class="pdf-close" onclick="closePdf()">✕</button>
     </div>
-    <iframe id="pdfFrame" title="Roosterwijziging PDF"></iframe>
+    <div class="iframe-wrapper">
+      <iframe id="pdfFrame" title="Roosterwijziging PDF"></iframe>
+    </div>
   </div>
 
   <footer>empowered by Joey</footer>
@@ -307,7 +318,7 @@
       const lbl       = document.getElementById('pdfLabel');
 
       lbl.textContent = label;
-      frame.src = pdf;
+      frame.src = pdf + '#zoom=page-fit&toolbar=0&navpanes=0&scrollbar=0&view=Fit';
       container.classList.add('visible');
 
       container.scrollIntoView({ behavior: 'smooth', block: 'start' });
