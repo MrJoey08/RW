@@ -208,6 +208,30 @@
       color: var(--muted);
       text-align: center;
     }
+
+    /* Infobord ring wrapper */
+    .infobord-wrapper {
+      width: 100%;
+      position: relative;
+    }
+    .infobord-ring {
+      position: absolute;
+      inset: -5px;
+      border-radius: 15px;
+      pointer-events: none;
+      overflow: visible;
+    }
+    .infobord-ring rect {
+      fill: none;
+      stroke: url(#ringGrad);
+      stroke-width: 2.5;
+      rx: 13;
+      ry: 13;
+    }
+    @keyframes ringDash {
+      from { stroke-dashoffset: var(--ring-len); }
+      to   { stroke-dashoffset: 0; }
+    }
   </style>
 </head>
 <body>
@@ -222,9 +246,20 @@
     <div class="sectie-label">Roosterwijzigingen</div>
     <div class="sectie-spacer"></div>
     <div class="sectie-label">Informatie</div>
-    <button class="date-btn" id="infobordBtn" style="display:none" onclick="downloadInfobord()">
-      <span id="infobordLabel">Infobord</span>
-    </button>
+    <div class="infobord-wrapper" id="infobordWrapper" style="display:none">
+      <button class="date-btn" id="infobordBtn" onclick="downloadInfobord()">
+        <span id="infobordLabel">Infobord</span>
+      </button>
+      <svg class="infobord-ring" id="infobordRing" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#e8634a"/>
+            <stop offset="100%" stop-color="#d45a72"/>
+          </linearGradient>
+        </defs>
+        <rect id="ringRect" rx="13" ry="13"/>
+      </svg>
+    </div>
   </div>
 
   <!-- PC -->
@@ -373,7 +408,7 @@ async function herlaadAlles() {
 async function haalLinks(forceer) {
   if (cachedLinks && !forceer) return cachedLinks;
   var res = await fetch('/api/links');
-  if (!res.ok) return null;
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   cachedLinks = await res.json();
   return cachedLinks;
 }
@@ -384,7 +419,6 @@ async function bouwKnoppen() {
   container.querySelectorAll('.datum-btn').forEach(function(b) { b.remove(); });
   try {
     var links = await haalLinks(true);
-    if (!links) return;
     ['vandaag', 'morgen'].forEach(function(map) {
       var info = links[map];
       if (!info) return;
@@ -398,7 +432,8 @@ async function bouwKnoppen() {
     });
     if (links.infobord) {
       document.getElementById('infobordLabel').textContent = links.infobord.label || 'Infobord';
-      document.getElementById('infobordBtn').style.display = '';
+      document.getElementById('infobordWrapper').style.display = '';
+      initRing();
     }
   } catch(e) { console.error('bouwKnoppen:', e); }
 }
@@ -483,7 +518,58 @@ function closePdf() {
   frame.src = '';
 }
 
+function initRing() {
+  var btn  = document.getElementById('infobordBtn');
+  var svg  = document.getElementById('infobordRing');
+  var rect = document.getElementById('ringRect');
+  if (!btn || !svg || !rect) return;
+
+  function sizeRing() {
+    var w = btn.offsetWidth  + 10;
+    var h = btn.offsetHeight + 10;
+    svg.setAttribute('width',  w);
+    svg.setAttribute('height', h);
+    rect.setAttribute('width',  w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('x', 0);
+    rect.setAttribute('y', 0);
+    var perimeter = 2 * (w + h);
+    rect.style.strokeDasharray  = perimeter;
+    rect.style.strokeDashoffset = perimeter;
+    svg.style.setProperty('--ring-len', perimeter);
+    return perimeter;
+  }
+  sizeRing();
+
+  var ringActive = false;
+  btn._startRing = function() {
+    if (ringActive) return;
+    ringActive = true;
+    var perimeter = sizeRing();
+    rect.style.transition = 'none';
+    rect.style.strokeDashoffset = perimeter;
+    rect.style.stroke = 'url(#ringGrad)';
+    rect.style.strokeWidth = '2.5';
+    rect.style.opacity = '1';
+    requestAnimationFrame(function() {
+      rect.style.transition = 'stroke-dashoffset 2.4s cubic-bezier(0.4,0,0.2,1)';
+      rect.style.strokeDashoffset = '0';
+    });
+    setTimeout(function() {
+      rect.style.transition = 'opacity 0.4s ease';
+      rect.style.opacity = '0';
+      setTimeout(function() {
+        rect.style.strokeDashoffset = perimeter;
+        rect.style.opacity = '1';
+        ringActive = false;
+      }, 420);
+    }, 2500);
+  };
+}
+
 function downloadInfobord() {
+  var btn = document.getElementById('infobordBtn');
+  if (btn && btn._startRing) btn._startRing();
   var a = document.createElement('a');
   a.href = '/api/proxy?bestand=infobord';
   a.download = 'infobord.pptx';
