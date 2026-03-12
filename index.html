@@ -632,9 +632,13 @@ function initRing() {
     rect.style.stroke = 'url(#ringGrad)';
     rect.style.strokeWidth = '2.5';
     rect.style.opacity = '1';
+    // Dubbele rAF: eerste frame flush de 'transition:none' reset,
+    // tweede frame start de animatie — anders pakt de browser de shortcut
     requestAnimationFrame(function() {
-      rect.style.transition = 'stroke-dashoffset 4.8s cubic-bezier(0.4,0,0.2,1)';
-      rect.style.strokeDashoffset = '0';
+      requestAnimationFrame(function() {
+        rect.style.transition = 'stroke-dashoffset 4.8s cubic-bezier(0.4,0,0.2,1)';
+        rect.style.strokeDashoffset = '0';
+      });
     });
     setTimeout(function() {
       rect.style.transition = 'opacity 0.4s ease';
