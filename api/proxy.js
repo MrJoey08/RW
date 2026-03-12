@@ -22,17 +22,14 @@ function haalOp(path) {
   });
 }
 
-// Scrape de hoofdpagina en haal de drie links eruit
 async function haalLinks() {
   const { body } = await haalOp('/');
   const html = body.toString('utf8');
-
-  // Zoek alle href="..." links die eindigen op .pdf of .pptx
   const regex = /href="([^"]+\.(pdf|pptx))"/gi;
   const links = {};
   let m;
   while ((m = regex.exec(html)) !== null) {
-    const pad = m[1]; // bijv. "vandaag/2026-12-03-do timestamp=....pdf"
+    const pad = m[1];
     if (pad.startsWith('vandaag/')) links.vandaag = pad;
     else if (pad.startsWith('morgen/')) links.morgen = pad;
     else if (pad.startsWith('info/'))   links.infobord = pad;
@@ -48,32 +45,29 @@ module.exports = async (req, res) => {
   try {
     const links = await haalLinks();
 
-    // ── /api/proxy?map=vandaag  of  ?map=morgen ─────────────────────
     if (map && ['vandaag', 'morgen'].includes(map)) {
       const pad = links[map];
       if (!pad) return res.status(404).json({ error: `Geen PDF gevonden voor ${map}` });
 
       const upstream = await haalOp('/' + encodeURI(pad));
-      if (upstream.status === 404) return res.status(404).json({ error: 'PDF niet gevonden op server' });
+      if (upstream.status === 404) return res.status(404).json({ error: 'PDF niet gevonden' });
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Cache-Control', 'public, max-age=1800');
-      if (upstream.headers['content-length'])
-        res.setHeader('Content-Length', upstream.headers['content-length']);
+      res.setHeader('Cache-Control', 'no-store');
+
       return res.status(200).end(upstream.body);
     }
 
-    // ── /api/proxy?bestand=infobord ──────────────────────────────────
     if (bestand === 'infobord') {
       const pad = links.infobord;
       if (!pad) return res.status(404).json({ error: 'Infobord niet gevonden' });
 
       const upstream = await haalOp('/' + encodeURI(pad));
-      const bestandsnaam = pad.split('/').pop();
+      const naam = pad.split('/').pop();
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-      res.setHeader('Content-Disposition', `attachment; filename="${bestandsnaam}"`);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.setHeader('Content-Disposition', `attachment; filename="${naam}"`);
+      res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=60');
       return res.status(200).end(upstream.body);
     }
 

@@ -174,16 +174,17 @@
 
     .iframe-wrapper {
       width: 100%;
-      /* A4 verhouding: hoogte = breedte × 1.4142 */
       aspect-ratio: 1 / 1.4142;
       position: relative;
+      overflow: hidden;
     }
 
     .iframe-wrapper iframe {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
+      /* iets groter dan 100% zodat de browser-scrollbar buiten beeld valt */
+      width: calc(100% + 17px);
+      height: calc(100% + 17px);
       border: none;
       display: block;
     }
@@ -287,6 +288,23 @@
     }
   }
 
+  let huidigeBlobUrl = null;
+  let huidigeBlobMap = null;
+  let blobInterval   = null;
+
+  function laadPdfBlob(map) {
+    // Cache-buster: afgerond op 30 minuten zodat hij elke halve uur ververst
+    const slot = Math.floor(Date.now() / (30 * 60 * 1000));
+    fetch('/api/proxy?map=' + map + '&_=' + slot)
+      .then(function(r) { return r.blob(); })
+      .then(function(blob) {
+        if (huidigeBlobUrl) URL.revokeObjectURL(huidigeBlobUrl);
+        huidigeBlobUrl = URL.createObjectURL(blob);
+        document.getElementById('pdfFrame').src =
+          huidigeBlobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH';
+      });
+  }
+
   function openPdf(btn) {
     document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -294,16 +312,21 @@
     const map   = btn.getAttribute('data-map');
     const label = btn.getAttribute('data-label');
 
-    const container = document.getElementById('pdfContainer');
-    const frame     = document.getElementById('pdfFrame');
-    const lbl       = document.getElementById('pdfLabel');
+    document.getElementById('pdfLabel').textContent = label;
+    document.getElementById('pdfContainer').classList.add('visible');
+    document.getElementById('pdfContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    lbl.textContent = label;
-    // Proxy haalt de juiste PDF op via /vandaag/ of /morgen/ map
-    frame.src = '/api/proxy?map=' + map;
-    container.classList.add('visible');
+    // Stop eventuele vorige refresh-timer
+    if (blobInterval) clearInterval(blobInterval);
+    huidigeBlobMap = map;
 
-    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Laad meteen
+    laadPdfBlob(map);
+
+    // En daarna elke 30 minuten automatisch verversen
+    blobInterval = setInterval(function() {
+      laadPdfBlob(huidigeBlobMap);
+    }, 30 * 60 * 1000);
   }
 
   function closePdf() {
