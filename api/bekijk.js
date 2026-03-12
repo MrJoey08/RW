@@ -12,114 +12,117 @@ module.exports = async (req, res) => {
   <title>Roosterwijziging</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-
-    @keyframes glow1 {
-      0%,100% { transform: translate(0%, 0%); }
-      50%      { transform: translate(-60%, -70%); }
-    }
-    @keyframes glow2 {
-      0%,100% { transform: translate(0%, 0%); }
-      50%      { transform: translate(55%, 65%); }
-    }
-    @keyframes glow3 {
-      0%,100% { transform: translate(0%, 0%); }
-      50%      { transform: translate(-30%, 40%); }
-    }
-
-    html, body {
-      min-height: 100%;
-      background: #1a1a1a;
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    .g1, .g2, .g3 {
+    html, body { min-height:100%; background:#1a1a1a; }
+    #bg {
       position: fixed;
-      border-radius: 50%;
-      filter: blur(72px);
-      pointer-events: none;
+      top:0; left:0; width:100%; height:100%;
       z-index: 0;
     }
-    .g1 {
-      width: 80vw; height: 60vw;
-      background: rgba(232,99,74,0.28);
-      bottom: -10%; right: -10%;
-      animation: glow1 7s ease-in-out infinite;
-    }
-    .g2 {
-      width: 70vw; height: 55vw;
-      background: rgba(212,90,114,0.22);
-      top: -10%; left: -10%;
-      animation: glow2 8s ease-in-out infinite;
-    }
-    .g3 {
-      width: 50vw; height: 40vw;
-      background: rgba(232,99,74,0.14);
-      top: 30%; left: 20%;
-      animation: glow3 9s ease-in-out infinite;
-    }
-
     #status {
-      position: relative;
-      z-index: 1;
-      color: #6b6560;
+      position: relative; z-index: 2;
+      color: rgba(232,224,216,0.5);
       font-family: sans-serif;
       font-size: 0.9rem;
       text-align: center;
       padding: 48px 24px;
     }
-
-    #viewer {
-      position: relative;
-      z-index: 1;
-    }
-
-    canvas {
-      display: block;
-      width: 100% !important;
-      height: auto !important;
-    }
+    #viewer { position: relative; z-index: 2; }
+    canvas.page { display:block; width:100%!important; height:auto!important; }
   </style>
 </head>
 <body>
-  <div class="g1"></div>
-  <div class="g2"></div>
-  <div class="g3"></div>
+  <canvas id="bg"></canvas>
   <div id="status">Laden…</div>
   <div id="viewer"></div>
+
+  <script>
+  // WebGL achtergrond
+  (function() {
+    var canvas = document.getElementById('bg');
+    var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) { canvas.style.background='#1a1a1a'; return; }
+
+    var frag = [
+      'precision mediump float;',
+      'uniform float t;',
+      'uniform vec2 res;',
+      'void main(){',
+      '  vec2 uv = gl_FragCoord.xy / res;',
+      '  float x = uv.x; float y = uv.y;',
+      '  float w1 = sin(x*3.1+t*0.7 + sin(y*2.4+t*0.5)*1.2) * 0.5 + 0.5;',
+      '  float w2 = sin(y*2.8-t*0.9 + sin(x*3.6-t*0.6)*1.1) * 0.5 + 0.5;',
+      '  float w3 = sin((x+y)*2.5+t*0.8 + sin(x*1.8+t*0.4)*0.9) * 0.5 + 0.5;',
+      '  float w4 = sin((x-y)*3.2-t*0.6 + sin(y*2.1-t*0.7)*1.0) * 0.5 + 0.5;',
+      '  float blend = (w1*w2 + w2*w3 + w3*w4) / 3.0;',
+      '  vec3 orange = vec3(0.910, 0.388, 0.290);',
+      '  vec3 pink   = vec3(0.831, 0.353, 0.447);',
+      '  vec3 dark   = vec3(0.102, 0.102, 0.102);',
+      '  vec3 col = mix(dark, mix(orange, pink, w2), pow(blend, 1.4) * 0.85);',
+      '  gl_FragColor = vec4(col, 1.0);',
+      '}'
+    ].join('\\n');
+
+    var vs = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vs, 'attribute vec2 p; void main(){gl_Position=vec4(p,0,1);}');
+    gl.compileShader(vs);
+    var fs = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fs, frag);
+    gl.compileShader(fs);
+    var prog = gl.createProgram();
+    gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+    gl.linkProgram(prog); gl.useProgram(prog);
+
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(prog,'p');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+
+    var tL=gl.getUniformLocation(prog,'t'), rL=gl.getUniformLocation(prog,'res');
+    var start=performance.now();
+
+    function resize(){
+      canvas.width=innerWidth; canvas.height=innerHeight;
+      gl.viewport(0,0,canvas.width,canvas.height);
+    }
+    resize();
+    window.onresize=resize;
+
+    (function tick(){
+      gl.uniform1f(tL,(performance.now()-start)/1000);
+      gl.uniform2f(rL,canvas.width,canvas.height);
+      gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+      requestAnimationFrame(tick);
+    })();
+  })();
+  </script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     pdfjsLib.getDocument({ url: '/api/proxy?map=${map}', disableStream: true })
-      .promise
-      .then(function(pdf) {
-        document.getElementById('status').style.display = 'none';
+      .promise.then(function(pdf) {
+        document.getElementById('status').remove();
         var chain = Promise.resolve();
         for (var i = 1; i <= pdf.numPages; i++) {
-          (function(pageNum) {
-            chain = chain.then(function() {
-              return pdf.getPage(pageNum).then(function(page) {
-                var scale    = window.devicePixelRatio * 2;
-                var viewport = page.getViewport({ scale: scale });
-                var canvas   = document.createElement('canvas');
-                canvas.width  = viewport.width;
-                canvas.height = viewport.height;
-                return page.render({
-                  canvasContext: canvas.getContext('2d'),
-                  viewport: viewport
-                }).promise.then(function() {
-                  document.getElementById('viewer').appendChild(canvas);
-                });
-              });
+          (function(n){ chain = chain.then(function(){
+            return pdf.getPage(n).then(function(page){
+              var vp = page.getViewport({ scale: window.devicePixelRatio * 2 });
+              var c  = document.createElement('canvas');
+              c.className = 'page';
+              c.width = vp.width; c.height = vp.height;
+              return page.render({ canvasContext: c.getContext('2d'), viewport: vp })
+                .promise.then(function(){ document.getElementById('viewer').appendChild(c); });
             });
-          })(i);
+          }); })(i);
         }
         return chain;
       })
-      .catch(function(err) {
-        document.getElementById('status').textContent = 'Fout: ' + err.message;
+      .catch(function(e){
+        document.getElementById('status').textContent = 'Fout: ' + e.message;
       });
   </script>
 </body>
