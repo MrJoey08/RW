@@ -332,7 +332,21 @@
   }
 
   // ── PDF laden met ETag ────────────────────────────────────────────
+  var isMobiel = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
   async function laadPdf(map, forceer) {
+    // Op mobiel geen blob laden — PDF wordt direct via proxy geopend
+    if (isMobiel) {
+      pdfCache[map] = {
+        blobUrl: null,
+        etag: null,
+        proxyUrl: '/api/proxy?map=' + map,
+        label: document.querySelector('.date-btn.datum-btn[data-map="' + map + '"]')?.getAttribute('data-label') || map
+      };
+      if (map === activePdfMap) zetPdfInViewer(map);
+      return;
+    }
+
     const cached  = pdfCache[map];
     const headers = {};
     if (cached && !forceer) headers['If-None-Match'] = cached.etag;
@@ -341,7 +355,7 @@
     try { res = await fetch('/api/proxy?map=' + map, { headers }); }
     catch(e) { return; }
 
-    if (res.status === 304) return; // niet veranderd
+    if (res.status === 304) return;
 
     const etag = res.headers.get('ETag') || ('' + Date.now());
     const blob = await res.blob();
