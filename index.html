@@ -579,7 +579,7 @@ function openPdf(btn) {
     document.getElementById('pdfContainer').classList.add('visible');
     document.getElementById('pdfMobielContainer').classList.remove('visible');
     document.getElementById('pdfContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    startGlow('glowCanvas', 'pdfFrame');
+    startGlow('glowCanvas', null);
   }
 
   if (pdfCache[map] && pdfCache[map].blobUrl) {
