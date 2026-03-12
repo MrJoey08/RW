@@ -174,17 +174,16 @@
 
     .iframe-wrapper {
       width: 100%;
+      /* A4 verhouding: hoogte = breedte × 1.4142 */
       aspect-ratio: 1 / 1.4142;
       position: relative;
-      overflow: hidden;
     }
 
     .iframe-wrapper iframe {
       position: absolute;
       inset: 0;
-      /* iets groter dan 100% zodat de browser-scrollbar buiten beeld valt */
-      width: calc(100% + 17px);
-      height: calc(100% + 17px);
+      width: 100%;
+      height: 100%;
       border: none;
       display: block;
     }
@@ -214,15 +213,22 @@
     <div class="logo-sub">Altena College</div>
   </header>
 
+  <!-- ══════════════════════════════════════════════════
+       BEHEERDER: voeg hier je datums + PDF-paden toe.
+       Kopieer een <button> regel en pas aan:
+         data-pdf="bestandsnaam.pdf"   ← PDF bestand (zet in zelfde map)
+         data-label="di 10 Mar"        ← tekst op de knop
+       ══════════════════════════════════════════════════ -->
   <div class="dates" id="dates">
+    <!-- Wordt dynamisch gevuld door JavaScript -->
     <div class="sectie-label">Roosterwijzigingen</div>
 
     <!-- datum-knoppen komen hier via JS -->
 
     <div class="sectie-spacer"></div>
     <div class="sectie-label">Informatie</div>
-    <button class="date-btn" id="infobordBtn" style="display:none" onclick="downloadInfobord()">
-      <span id="infobordLabel">Infobord</span>
+    <button class="date-btn" onclick="downloadInfobord()">
+      <span>Infobord</span>
     </button>
   </div>
 
@@ -241,115 +247,120 @@
 
 </div> <!-- /page-content -->
 
-<script>
-  let cachedLinks = null;
+  <script>
+    const DAG_KORT  = ['zo','ma','di','wo','do','vr','za'];
+    const MAAND_KORT = ['jan','feb','mar','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
 
-  // Haal de links op van de proxy (scrapt live rw.altenacollege.nl)
-  async function haalLinks(forceer) {
-    if (cachedLinks && !forceer) return cachedLinks;
-    const res = await fetch('/api/links');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    cachedLinks = await res.json();
-    return cachedLinks;
-  }
+    // Geeft de volgende schooldag (ma-vr) na de gegeven datum
+    function volgendeSchooldag(d) {
+      const next = new Date(d);
+      do {
+        next.setDate(next.getDate() + 1);
+      } while (next.getDay() === 0 || next.getDay() === 6); // sla za(6) en zo(0) over
+      return next;
+    }
 
-  async function bouwKnoppen() {
-    const container = document.getElementById('dates');
-    const spacer    = container.querySelector('.sectie-spacer');
+    // Geeft de "actieve" startdag:
+    // - voor 16:30 → vandaag (als schooldag) anders morgen-schooldag
+    // - weekend → maandag
+    function startdag() {
+      const nu = new Date();
+      const dag = nu.getDay(); // 0=zo, 6=za
 
-    // Verwijder eventuele oude datum-knoppen
-    container.querySelectorAll('.datum-btn').forEach(b => b.remove());
+      // Weekend → volgende schooldag (maandag)
+      if (dag === 0 || dag === 6) return volgendeSchooldag(nu);
 
-    try {
-      const links = await haalLinks(true);
+      // Doordeweeks na 16:30 → volgende schooldag
+      if (nu.getHours() > 16 || (nu.getHours() === 16 && nu.getMinutes() >= 30)) return volgendeSchooldag(nu);
 
-      ['vandaag', 'morgen'].forEach(function(map) {
-        const info = links[map];
-        if (!info) return;
+      // Anders gewoon vandaag
+      return nu;
+    }
+
+    // Maakt een leesbaar label: "di 10 Mar"
+    function formatLabel(d) {
+      return `${DAG_KORT[d.getDay()]} ${d.getDate()} ${MAAND_KORT[d.getMonth()]}`;
+    }
+
+    // Maakt bestandsnaam: 11-03-2026.pdf
+    function formatPdf(d) {
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const jj = d.getFullYear();
+      return `${dd}-${mm}-${jj}.pdf`;
+    }
+
+    // Bouw de twee datum-knoppen dynamisch
+    function bouwKnoppen() {
+      const dag1 = startdag();
+      const dag2 = volgendeSchooldag(dag1);
+
+      const daten = [
+        { datum: dag1, pdf: formatPdf(dag1) },
+        { datum: dag2, pdf: formatPdf(dag2) }
+      ];
+
+      const container = document.getElementById('dates');
+
+      // Verwijder eventuele oude datum-knoppen
+      container.querySelectorAll('.datum-btn').forEach(b => b.remove());
+
+      // Voeg in vóór de spacer (zodat ze boven Informatie sectie blijven)
+      const spacer = container.querySelector('.sectie-spacer');
+
+      daten.forEach(({ datum, pdf }) => {
+        const label = formatLabel(datum);
 
         const btn = document.createElement('button');
         btn.className = 'date-btn datum-btn';
-        btn.setAttribute('data-map', map);
-        btn.setAttribute('data-label', info.label);
+        btn.setAttribute('data-pdf', pdf);
+        btn.setAttribute('data-label', label);
         btn.onclick = function() { openPdf(this); };
-        btn.innerHTML = '<span>' + info.label + '</span>';
+        btn.innerHTML = `<span>${label}</span>`;
 
         container.insertBefore(btn, spacer);
       });
-
-      // Infobord knop zichtbaar maken met juiste label
-      if (links.infobord) {
-        document.getElementById('infobordLabel').textContent = links.infobord.label || 'Infobord';
-        document.getElementById('infobordBtn').style.display = '';
-      }
-
-    } catch(e) {
-      // stil falen — knoppen blijven leeg
     }
-  }
 
-  let huidigeBlobUrl = null;
-  let huidigeBlobMap = null;
-  let blobInterval   = null;
+    function openPdf(btn) {
+      document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
 
-  function laadPdfBlob(map) {
-    // Cache-buster: afgerond op 30 minuten zodat hij elke halve uur ververst
-    const slot = Math.floor(Date.now() / (30 * 60 * 1000));
-    fetch('/api/proxy?map=' + map + '&_=' + slot)
-      .then(function(r) { return r.blob(); })
-      .then(function(blob) {
-        if (huidigeBlobUrl) URL.revokeObjectURL(huidigeBlobUrl);
-        huidigeBlobUrl = URL.createObjectURL(blob);
-        document.getElementById('pdfFrame').src =
-          huidigeBlobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH';
-      });
-  }
+      const pdf   = btn.getAttribute('data-pdf');
+      const label = btn.getAttribute('data-label');
 
-  function openPdf(btn) {
-    document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+      const container = document.getElementById('pdfContainer');
+      const frame     = document.getElementById('pdfFrame');
+      const lbl       = document.getElementById('pdfLabel');
 
-    const map   = btn.getAttribute('data-map');
-    const label = btn.getAttribute('data-label');
+      lbl.textContent = label;
+      frame.src = pdf + '#zoom=page-fit&toolbar=0&navpanes=0&scrollbar=0&view=Fit';
+      container.classList.add('visible');
 
-    document.getElementById('pdfLabel').textContent = label;
-    document.getElementById('pdfContainer').classList.add('visible');
-    document.getElementById('pdfContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
-    // Stop eventuele vorige refresh-timer
-    if (blobInterval) clearInterval(blobInterval);
-    huidigeBlobMap = map;
+    function closePdf() {
+      document.getElementById('pdfContainer').classList.remove('visible');
+      document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('pdfFrame').src = '';
+    }
 
-    // Laad meteen
-    laadPdfBlob(map);
+    function downloadInfobord() {
+      const a = document.createElement('a');
+      a.href = 'infobord.pptx';
+      a.download = 'infobord.pptx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
 
-    // En daarna elke 30 minuten automatisch verversen
-    blobInterval = setInterval(function() {
-      laadPdfBlob(huidigeBlobMap);
-    }, 30 * 60 * 1000);
-  }
+    // Start
+    bouwKnoppen();
 
-  function closePdf() {
-    document.getElementById('pdfContainer').classList.remove('visible');
-    document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('pdfFrame').src = '';
-  }
-
-  function downloadInfobord() {
-    const a = document.createElement('a');
-    a.href = '/api/proxy?bestand=infobord';
-    a.download = 'infobord.pptx';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-
-  // Start
-  bouwKnoppen();
-
-  // Refresh elke 5 minuten zodat nieuwe uploads automatisch verschijnen
-  setInterval(bouwKnoppen, 5 * 60 * 1000);
-</script>
+    // Hercheck elke minuut of het 20:00 is geworden en knoppen moeten updaten
+    setInterval(bouwKnoppen, 60 * 1000);
+  </script>
 
 </body>
 </html>
