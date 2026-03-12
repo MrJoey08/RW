@@ -623,7 +623,7 @@ function initRing() {
   sizeRing();
 
   var ringActive = false;
-  btn._startRing = function() {
+  btn._startRing = function(duur) {
     if (ringActive) return;
     ringActive = true;
     var perimeter = sizeRing();
@@ -632,11 +632,9 @@ function initRing() {
     rect.style.stroke = 'url(#ringGrad)';
     rect.style.strokeWidth = '2.5';
     rect.style.opacity = '1';
-    // Dubbele rAF: eerste frame flush de 'transition:none' reset,
-    // tweede frame start de animatie — anders pakt de browser de shortcut
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
-        rect.style.transition = 'stroke-dashoffset 4.8s cubic-bezier(0.4,0,0.2,1)';
+        rect.style.transition = 'stroke-dashoffset ' + (duur / 1000).toFixed(2) + 's cubic-bezier(0.4,0,0.2,1)';
         rect.style.strokeDashoffset = '0';
       });
     });
@@ -648,19 +646,31 @@ function initRing() {
         rect.style.opacity = '1';
         ringActive = false;
       }, 420);
-    }, 4900);
+    }, duur + 100);
   };
 }
 
 function downloadInfobord() {
   var btn = document.getElementById('infobordBtn');
-  if (btn && btn._startRing) btn._startRing();
-  var a = document.createElement('a');
-  a.href = '/api/proxy?bestand=infobord';
-  a.download = 'infobord.pptx';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  var start = performance.now();
+
+  fetch('/api/proxy?bestand=infobord')
+    .then(function(res) { return res.blob(); })
+    .then(function(blob) {
+      var duur = Math.max(2000, performance.now() - start);
+      if (btn && btn._startRing) btn._startRing(duur);
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'infobord.pptx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    })
+    .catch(function() {
+      if (btn && btn._startRing) btn._startRing(2000);
+    });
 }
 
 bouwKnoppen();
