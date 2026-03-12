@@ -404,7 +404,7 @@
   }
 
   function openMobielPdf() {
-    if (activePdfMap) window.open('/api/proxy?map=' + activePdfMap, '_blank');
+    if (activePdfMap) window.location.href = '/api/proxy?map=' + activePdfMap;
   }
 
   function closePdf() {
