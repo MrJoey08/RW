@@ -482,7 +482,15 @@ function zetPcViewer(map) {
 }
 
 function openMobielPdf() {
-  if (activePdfMap) window.location.href = '/api/bekijk?map=' + activePdfMap;
+  if (activePdfMap) {
+    var a = document.createElement('a');
+    a.href = '/api/bekijk?map=' + activePdfMap;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 }
 
 function openPdf(btn) {
