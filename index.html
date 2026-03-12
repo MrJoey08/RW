@@ -500,6 +500,7 @@ function zetPcViewer(map) {
   var cached = pdfCache[map];
   if (!cached || !cached.blobUrl) return;
   var frame = document.getElementById('pdfFrame');
+  frame.classList.remove('geladen');
   frame.src = cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
   frame.onload = function() {
     setTimeout(function() { frame.classList.add('geladen'); }, 2000);
