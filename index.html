@@ -404,7 +404,8 @@
   }
 
   function openMobielPdf() {
-    if (activePdfMap) window.location.href = '/api/proxy?map=' + activePdfMap;
+    // Opent een aparte HTML pagina met de PDF erin — geen blob popup
+    if (activePdfMap) window.location.href = '/api/bekijk?map=' + activePdfMap;
   }
 
   function closePdf() {
