@@ -373,7 +373,7 @@ async function herlaadAlles() {
 async function haalLinks(forceer) {
   if (cachedLinks && !forceer) return cachedLinks;
   var res = await fetch('/api/links');
-  if (!res.ok) throw new Error('HTTP ' + res.status);
+  if (!res.ok) return null;
   cachedLinks = await res.json();
   return cachedLinks;
 }
@@ -384,6 +384,7 @@ async function bouwKnoppen() {
   container.querySelectorAll('.datum-btn').forEach(function(b) { b.remove(); });
   try {
     var links = await haalLinks(true);
+    if (!links) return;
     ['vandaag', 'morgen'].forEach(function(map) {
       var info = links[map];
       if (!info) return;
