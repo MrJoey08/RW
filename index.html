@@ -397,16 +397,34 @@ function planHerlaad() {
     var min     = nu.getHours() * 60 + nu.getMinutes();
     var tot730  = (7*60+30) - min;
     if (tot730 <= 0) tot730 += 24 * 60;
-    herlaadTimer = setTimeout(function() { herlaadAlles(); planHerlaad(); }, tot730 * 60 * 1000);
+    herlaadTimer = setTimeout(function() { herlaadAlsNietActief(); planHerlaad(); }, tot730 * 60 * 1000);
     return;
   }
-  herlaadTimer = setTimeout(function() { herlaadAlles(); planHerlaad(); }, interval);
+  herlaadTimer = setTimeout(function() { herlaadAlsNietActief(); planHerlaad(); }, interval);
+}
+
+var gemistHerlaad = false;
+
+function herlaadAlsNietActief() {
+  if (document.hidden) {
+    herlaadAlles();
+  } else {
+    // Tabblad is actief — markeer als gemist, voer uit zodra gebruiker weggaat
+    gemistHerlaad = true;
+  }
 }
 
 async function herlaadAlles() {
+  gemistHerlaad = false;
   await bouwKnoppen();
   if (activePdfMap) await laadPdf(activePdfMap, false);
 }
+
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden && gemistHerlaad) {
+    herlaadAlles();
+  }
+});
 
 // ── Links ─────────────────────────────────────────────────────────
 async function haalLinks(forceer) {
@@ -483,7 +501,9 @@ function zetPcViewer(map) {
   if (!cached || !cached.blobUrl) return;
   var frame = document.getElementById('pdfFrame');
   frame.src = cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
-  frame.onload = function() { frame.classList.add('geladen'); };
+  frame.onload = function() {
+    setTimeout(function() { frame.classList.add('geladen'); }, 2000);
+  };
 }
 
 function zetStatus(tekst) {
