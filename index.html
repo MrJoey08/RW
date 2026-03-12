@@ -248,11 +248,9 @@
       <span class="pdf-label" id="pdfLabel"></span>
       <button class="pdf-close" onclick="closePdf()">✕</button>
     </div>
-    <!-- PC: iframe -->
-    <div class="iframe-wrapper">
-      <iframe id="pdfFrame" title="Roosterwijziging PDF"></iframe>
-    </div>
-    <!-- Mobiel: open in nieuw tabblad -->
+    <!-- PC: iframe wordt via JS ingevoegd, NOOIT op mobiel -->
+    <div class="iframe-wrapper" id="iframeWrapper"></div>
+    <!-- Mobiel: open knop -->
     <div class="pdf-mobiel">
       <button class="pdf-mobiel-btn" onclick="openMobielPdf()">open</button>
     </div>
