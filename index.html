@@ -654,19 +654,19 @@ function downloadInfobord() {
   var btn = document.getElementById('infobordBtn');
   var start = performance.now();
 
+  // Download via directe link (behoudt originele bestandsnaam van de server)
+  var a = document.createElement('a');
+  a.href = '/api/proxy?bestand=infobord';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // Meet hoe lang de fetch duurt voor de ring-animatie
   fetch('/api/proxy?bestand=infobord')
     .then(function(res) { return res.blob(); })
-    .then(function(blob) {
+    .then(function() {
       var duur = Math.max(2000, performance.now() - start);
       if (btn && btn._startRing) btn._startRing(duur);
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'infobord.pptx';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
     })
     .catch(function() {
       if (btn && btn._startRing) btn._startRing(2000);
