@@ -1,10 +1,13 @@
-// Stuurt een HTML pagina die de PDF toont via een <embed>
-// Werkt op mobiel zonder blob-popup
+// Toont de PDF via Google Docs Viewer — Android ziet HTML, geen PDF
 module.exports = async (req, res) => {
   const { map } = req.query;
   if (!map || !['vandaag', 'morgen'].includes(map)) {
     return res.status(400).send('Ongeldig');
   }
+
+  // De publieke URL van de proxy — Google Docs Viewer haalt dit op
+  const pdfUrl = encodeURIComponent(`https://rw-ac.vercel.app/api/proxy?map=${map}`);
+  const viewerUrl = `https://docs.google.com/viewer?url=${pdfUrl}&embedded=true`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -15,16 +18,11 @@ module.exports = async (req, res) => {
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html, body { height:100%; background:#1a1a1a; }
-    embed, iframe {
-      display:block;
-      width:100%;
-      height:100vh;
-      border:none;
-    }
+    iframe { display:block; width:100%; height:100vh; border:none; }
   </style>
 </head>
 <body>
-  <embed src="/api/proxy?map=${map}" type="application/pdf">
+  <iframe src="${viewerUrl}" allowfullscreen></iframe>
 </body>
 </html>`;
 
