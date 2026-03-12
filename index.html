@@ -7,35 +7,28 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:        #1a1a1a;
-      --surface:   #242424;
-      --border:    #2e2e2e;
-      --accent:    #e8634a;
-      --accent2:   #d45a72;
-      --text:      #e8e0d8;
-      --muted:     #6b6560;
+      --bg:      #1a1a1a;
+      --surface: #242424;
+      --border:  #2e2e2e;
+      --accent:  #e8634a;
+      --accent2: #d45a72;
+      --text:    #e8e0d8;
+      --muted:   #6b6560;
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; }
-
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; }
     body {
       background: var(--bg);
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
       min-height: 100dvh;
-      overflow-y: auto;
-      overscroll-behavior: none;
     }
-
     .page-content {
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100dvh;
-      width: 100%;
     }
-
     header {
       width: 100%;
       padding: 48px 24px 32px;
@@ -44,7 +37,6 @@
       align-items: center;
       gap: 8px;
     }
-
     .logo-title {
       font-family: 'Playfair Display', serif;
       font-size: clamp(2rem, 6vw, 3.2rem);
@@ -55,14 +47,12 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-
     .logo-sub {
       font-size: 0.75rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--muted);
     }
-
     .dates {
       display: flex;
       flex-direction: column;
@@ -73,7 +63,6 @@
       max-width: 320px;
       padding: 0 24px;
     }
-
     .sectie-label {
       width: 100%;
       font-size: 0.7rem;
@@ -84,9 +73,7 @@
       border-bottom: 1px solid var(--border);
       margin-bottom: 2px;
     }
-
-    .sectie-spacer { width: 100%; margin-top: 8px; }
-
+    .sectie-spacer { width:100%; margin-top:8px; }
     .date-btn {
       width: 100%;
       padding: 14px 28px;
@@ -102,7 +89,6 @@
       position: relative;
       overflow: hidden;
     }
-
     .date-btn::before {
       content: '';
       position: absolute;
@@ -111,13 +97,12 @@
       opacity: 0;
       transition: opacity 0.18s ease;
     }
-
     .date-btn:hover::before,
     .date-btn.active::before { opacity: 0.12; }
-    .date-btn.active { border-color: var(--accent); color: var(--accent); }
-    .date-btn span { position: relative; z-index: 1; }
+    .date-btn.active { border-color: var(--accent); }
+    .date-btn span { position: relative; z-index:1; }
 
-    /* ── PDF hok (PC) ── */
+    /* PDF container PC */
     .pdf-container {
       display: none;
       width: calc(100% - 48px);
@@ -128,9 +113,7 @@
       overflow: hidden;
       background: var(--surface);
     }
-
     .pdf-container.visible { display: block; }
-
     .pdf-header {
       display: flex;
       align-items: center;
@@ -138,25 +121,23 @@
       padding: 14px 20px;
       border-bottom: 1px solid var(--border);
     }
-
     .pdf-label {
       font-size: 0.8rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--accent);
     }
-
     .pdf-close {
       background: none;
       border: none;
       color: var(--muted);
       font-size: 1.2rem;
       cursor: pointer;
-      transition: color 0.15s;
       line-height: 1;
     }
     .pdf-close:hover { color: var(--accent); }
 
+    /* iframe hok */
     .iframe-wrapper {
       width: 100%;
       aspect-ratio: 1 / 1.4142;
@@ -164,7 +145,12 @@
       overflow: hidden;
       background: #1a1a1a;
     }
-
+    #glowCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+    }
     .iframe-wrapper iframe {
       position: absolute;
       top: 0; left: 0;
@@ -173,79 +159,39 @@
       border: none;
       z-index: 2;
       opacity: 0;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.5s ease;
     }
+    .iframe-wrapper iframe.geladen { opacity: 1; }
 
-    .iframe-wrapper iframe.geladen {
-      opacity: 1;
-    }
-
-    #glowCanvas {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 1;
-      display: block;
-    }
-
-    /* ── Mobiel hok ── */
+    /* Mobiel hok */
     .pdf-mobiel-container {
-      display: none; /* wordt via JS zichtbaar op mobiel */
+      display: none;
       width: calc(100% - 48px);
       max-width: 700px;
       margin: 32px 24px 48px;
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
-      background: var(--surface);
     }
-
     .pdf-mobiel-container.visible { display: block; }
-
-    @keyframes glow3 {
-      0%,100% { transform: translate(0%, 0%); }
-      50%      { transform: translate(-30%, 40%); }
-    }
-
     .pdf-mobiel-body {
-      padding: 48px 24px;
+      padding: 64px 24px;
       text-align: center;
       position: relative;
       overflow: hidden;
       background: #1a1a1a;
     }
-
-    .pdf-mobiel-body::before {
-      content: '';
+    #glowCanvasMobiel {
       position: absolute;
-      border-radius: 50%;
-      filter: blur(48px);
-      width: 70%; height: 120%;
-      background: rgba(232,99,74,0.28);
-      bottom: -20%; right: -20%;
-      animation: glow1 7s ease-in-out infinite;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
     }
-
-    .pdf-mobiel-body::after {
-      content: '';
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(48px);
-      width: 60%; height: 110%;
-      background: rgba(212,90,114,0.22);
-      top: -20%; left: -20%;
-      animation: glow2 8s ease-in-out infinite;
-    }
-
     .pdf-mobiel-btn {
       position: relative;
-      z-index: 1;
-    }
-
-    .pdf-mobiel-btn {
+      z-index: 2;
       display: inline-block;
       padding: 13px 52px;
-      background: #2e2e2e;
+      background: rgba(36,36,36,0.85);
       border: 1px solid #3a3a3a;
       border-radius: 10px;
       color: var(--text);
@@ -255,7 +201,6 @@
       cursor: pointer;
       letter-spacing: 0.04em;
     }
-
     footer {
       margin-top: auto;
       padding: 24px;
@@ -282,284 +227,272 @@
     </button>
   </div>
 
-  <!-- PC: iframe hok -->
+  <!-- PC -->
   <div class="pdf-container" id="pdfContainer">
     <div class="pdf-header">
       <span class="pdf-label" id="pdfLabel"></span>
-      <button class="pdf-close" onclick="closePdf()">✕</button>
+      <button class="pdf-close" onclick="closePdf()">&#x2715;</button>
     </div>
-    <div class="iframe-wrapper" id="iframeWrapper">
+    <div class="iframe-wrapper">
       <canvas id="glowCanvas"></canvas>
       <iframe id="pdfFrame" title="Roosterwijziging PDF"></iframe>
     </div>
   </div>
 
-  <!-- Mobiel: knop hok -->
+  <!-- Mobiel -->
   <div class="pdf-mobiel-container" id="pdfMobielContainer">
     <div class="pdf-header">
       <span class="pdf-label" id="pdfMobielLabel"></span>
-      <button class="pdf-close" onclick="closePdf()">✕</button>
+      <button class="pdf-close" onclick="closePdf()">&#x2715;</button>
     </div>
     <div class="pdf-mobiel-body">
+      <canvas id="glowCanvasMobiel"></canvas>
       <button class="pdf-mobiel-btn" onclick="openMobielPdf()">open</button>
     </div>
   </div>
 
   <footer>empowered by Joey Haks</footer>
-
 </div>
 
 <script>
-  var isMobiel = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-  var cachedLinks  = null;
-  var pdfCache     = {};
-  var herlaadTimer = null;
-  var activePdfMap = null;
+var isMobiel = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+var cachedLinks  = null;
+var pdfCache     = {};
+var herlaadTimer = null;
+var activePdfMap = null;
 
-  // ── Tijdschema ────────────────────────────────────────────────────
-  function intervalVoorNu() {
-    var nu  = new Date();
-    var min = nu.getHours() * 60 + nu.getMinutes();
-    if (min >= 7*60+30 && min < 8*60+30)  return 1  * 60 * 1000;
-    if (min >= 8*60+30 && min < 10*60+5)  return 10 * 60 * 1000;
-    if (min >= 10*60+5 && min < 18*60)    return 30 * 60 * 1000;
-    return null;
+// ── WebGL glow shader ─────────────────────────────────────────────
+function startGlow(canvasId, stopOnLoad) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+
+  var vertSrc = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+
+  var fragLines = [
+    'precision mediump float;',
+    'uniform float t;',
+    'uniform vec2 res;',
+    'void main(){',
+    '  vec2 uv=gl_FragCoord.xy/res;',
+    '  float x=uv.x,y=uv.y;',
+    '  float w1=sin(x*3.1+t*0.7+sin(y*2.4+t*0.5)*1.2)*0.5+0.5;',
+    '  float w2=sin(y*2.8-t*0.9+sin(x*3.6-t*0.6)*1.1)*0.5+0.5;',
+    '  float w3=sin((x+y)*2.5+t*0.8+sin(x*1.8+t*0.4)*0.9)*0.5+0.5;',
+    '  float w4=sin((x-y)*3.2-t*0.6+sin(y*2.1-t*0.7)*1.0)*0.5+0.5;',
+    '  float b=(w1*w2+w2*w3+w3*w4)/3.0;',
+    '  vec3 og=vec3(0.910,0.388,0.290);',
+    '  vec3 pk=vec3(0.831,0.353,0.447);',
+    '  vec3 dk=vec3(0.102,0.102,0.102);',
+    '  vec3 c=mix(dk,mix(og,pk,w2),pow(b,1.4)*0.85);',
+    '  gl_FragColor=vec4(c,1.0);',
+    '}'
+  ];
+  var fragSrc = fragLines.join('\n');
+
+  var vs = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vs, vertSrc);
+  gl.compileShader(vs);
+  var fs = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fs, fragSrc);
+  gl.compileShader(fs);
+  var prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+  var pLoc = gl.getAttribLocation(prog, 'p');
+  gl.enableVertexAttribArray(pLoc);
+  gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
+
+  var tLoc   = gl.getUniformLocation(prog, 't');
+  var resLoc = gl.getUniformLocation(prog, 'res');
+
+  var running = true;
+  var start   = performance.now();
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
   }
+  resize();
 
-  function planHerlaad() {
-    if (herlaadTimer) clearTimeout(herlaadTimer);
-    var interval = intervalVoorNu();
-    if (!interval) {
-      var nu  = new Date();
-      var min = nu.getHours() * 60 + nu.getMinutes();
-      var minTot730 = (7*60+30) - min;
-      if (minTot730 <= 0) minTot730 += 24 * 60;
-      herlaadTimer = setTimeout(function() { herlaadAlles(); planHerlaad(); }, minTot730 * 60 * 1000);
-      return;
-    }
-    herlaadTimer = setTimeout(function() { herlaadAlles(); planHerlaad(); }, interval);
+  function tick() {
+    if (!running) return;
+    var elapsed = (performance.now() - start) / 1000;
+    gl.uniform1f(tLoc, elapsed);
+    gl.uniform2f(resLoc, canvas.width || 1, canvas.height || 1);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(tick);
   }
+  tick();
 
-  async function herlaadAlles() {
-    await bouwKnoppen();
-    if (activePdfMap) await laadPdf(activePdfMap, false);
-  }
-
-  // ── Links ─────────────────────────────────────────────────────────
-  async function haalLinks(forceer) {
-    if (cachedLinks && !forceer) return cachedLinks;
-    var res = await fetch('/api/links');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    cachedLinks = await res.json();
-    return cachedLinks;
-  }
-
-  async function bouwKnoppen() {
-    var container = document.getElementById('dates');
-    var spacer    = container.querySelector('.sectie-spacer');
-    container.querySelectorAll('.datum-btn').forEach(function(b) { b.remove(); });
-    try {
-      var links = await haalLinks(true);
-      ['vandaag', 'morgen'].forEach(function(map) {
-        var info = links[map];
-        if (!info) return;
-        var btn = document.createElement('button');
-        btn.className = 'date-btn datum-btn';
-        btn.setAttribute('data-map', map);
-        btn.setAttribute('data-label', info.label);
-        btn.onclick = function() { openPdf(this); };
-        btn.innerHTML = '<span>' + info.label + '</span>';
-        container.insertBefore(btn, spacer);
-      });
-      if (links.infobord) {
-        document.getElementById('infobordLabel').textContent = links.infobord.label || 'Infobord';
-        document.getElementById('infobordBtn').style.display = '';
-      }
-    } catch(e) {}
-  }
-
-  // ── PDF laden — alleen op PC ──────────────────────────────────────
-  async function laadPdf(map, forceer) {
-    var label = (document.querySelector('.date-btn.datum-btn[data-map="' + map + '"]') || {}).getAttribute
-      ? document.querySelector('.date-btn.datum-btn[data-map="' + map + '"]').getAttribute('data-label')
-      : map;
-
-    // Mobiel: geen fetch, geen blob, alleen de proxy URL opslaan
-    if (isMobiel) {
-      pdfCache[map] = { proxyUrl: '/api/bekijk?map=' + map, label: label };
-      if (map === activePdfMap) zetMobielViewer(map);
-      return;
-    }
-
-    // PC: blob laden
-    var cached  = pdfCache[map];
-    var headers = {};
-    if (cached && cached.etag && !forceer) headers['If-None-Match'] = cached.etag;
-
-    var res;
-    try { res = await fetch('/api/proxy?map=' + map, { headers }); }
-    catch(e) { return; }
-
-    if (res.status === 304) return;
-
-    var etag = res.headers.get('ETag') || ('' + Date.now());
-    var blob = await res.blob();
-    var url  = URL.createObjectURL(blob);
-
-    if (cached && cached.blobUrl) URL.revokeObjectURL(cached.blobUrl);
-    pdfCache[map] = { blobUrl: url, etag: etag, label: label };
-
-    if (map === activePdfMap) zetPcViewer(map);
-  }
-
-  function zetPcViewer(map) {
-    var cached = pdfCache[map];
-    if (!cached || !cached.blobUrl) return;
-    document.getElementById('pdfFrame').src =
-      cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
-  }
-
-  function zetMobielViewer(map) {
-    // Niks te doen — de knop gebruikt activePdfMap rechtstreeks
-  }
-
-  function openMobielPdf() {
-    if (activePdfMap) window.location.href = '/api/bekijk?map=' + activePdfMap;
-  }
-
-  function openPdf(btn) {
-    document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-
-    var map   = btn.getAttribute('data-map');
-    var label = btn.getAttribute('data-label');
-    activePdfMap = map;
-
-    if (isMobiel) {
-      // Mobiel: toon het knop-hok
-      document.getElementById('pdfMobielLabel').textContent = label;
-      document.getElementById('pdfMobielContainer').classList.add('visible');
-      document.getElementById('pdfContainer').classList.remove('visible');
-    } else {
-      // PC: toon het iframe-hok
-      document.getElementById('pdfLabel').textContent = label;
-      document.getElementById('pdfContainer').classList.add('visible');
-      document.getElementById('pdfMobielContainer').classList.remove('visible');
-      document.getElementById('pdfContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    if (pdfCache[map]) {
-      if (!isMobiel) zetPcViewer(map);
-      laadPdf(map, false);
-    } else {
-      laadPdf(map, true);
-    }
-  }
-
-  function closePdf() {
-    activePdfMap = null;
-    document.getElementById('pdfContainer').classList.remove('visible');
-    document.getElementById('pdfMobielContainer').classList.remove('visible');
-    document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
-    document.getElementById('pdfFrame').src = '';
-  }
-
-  function downloadInfobord() {
-    var a = document.createElement('a');
-    a.href = '/api/proxy?bestand=infobord';
-    a.download = 'infobord.pptx';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-
-  // Luxe vloeibare glow shader op canvas
-  (function() {
-    var canvas = document.getElementById('glowCanvas');
-    var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) return;
-
-    var vert = [
-      'attribute vec2 p;',
-      'void main(){gl_Position=vec4(p,0,1);}'
-    ].join('');
-
-    var frag = [
-      'precision mediump float;',
-      'uniform float t;',
-      'uniform vec2 res;',
-      'void main(){',
-      '  vec2 uv = gl_FragCoord.xy / res;',
-      '  float x = uv.x; float y = uv.y;',
-      // Meerdere vloeiende sinusgolven die door elkaar stromen
-      '  float w1 = sin(x*3.1+t*0.7 + sin(y*2.4+t*0.5)*1.2) * 0.5 + 0.5;',
-      '  float w2 = sin(y*2.8-t*0.9 + sin(x*3.6-t*0.6)*1.1) * 0.5 + 0.5;',
-      '  float w3 = sin((x+y)*2.5+t*0.8 + sin(x*1.8+t*0.4)*0.9) * 0.5 + 0.5;',
-      '  float w4 = sin((x-y)*3.2-t*0.6 + sin(y*2.1-t*0.7)*1.0) * 0.5 + 0.5;',
-      '  float blend = (w1*w2 + w2*w3 + w3*w4) / 3.0;',
-      // Oranje #e8634a en roze #d45a72 mixen
-      '  vec3 orange = vec3(0.910, 0.388, 0.290);',
-      '  vec3 pink   = vec3(0.831, 0.353, 0.447);',
-      '  vec3 dark   = vec3(0.102, 0.102, 0.102);',
-      '  vec3 col = mix(dark, mix(orange, pink, w2), pow(blend, 1.4) * 0.85);',
-      '  gl_FragColor = vec4(col, 1.0);',
-      '}'
-    ].join('
-');
-
-    function shader(type, src) {
-      var s = gl.createShader(type);
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      return s;
-    }
-
-    var prog = gl.createProgram();
-    gl.attachShader(prog, shader(gl.VERTEX_SHADER, vert));
-    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, frag));
-    gl.linkProgram(prog);
-    gl.useProgram(prog);
-
-    var buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
-    var loc = gl.getAttribLocation(prog, 'p');
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-    var tLoc   = gl.getUniformLocation(prog, 't');
-    var resLoc = gl.getUniformLocation(prog, 'res');
-
-    var running = true;
-    var start   = performance.now();
-
-    function resize() {
-      var w = canvas.offsetWidth;
-      var h = canvas.offsetHeight;
-      canvas.width  = w;
-      canvas.height = h;
-      gl.viewport(0, 0, w, h);
-    }
-    resize();
-
-    function tick() {
-      if (!running) return;
-      var elapsed = (performance.now() - start) / 1000;
-      gl.uniform1f(tLoc, elapsed);
-      gl.uniform2f(resLoc, canvas.width, canvas.height);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      requestAnimationFrame(tick);
-    }
-    tick();
-
-    // Stop animatie zodra PDF geladen is
-    document.getElementById('pdfFrame').addEventListener('load', function() {
+  if (stopOnLoad) {
+    document.getElementById(stopOnLoad).addEventListener('load', function() {
       running = false;
     });
-  })();
+  }
+}
 
-  bouwKnoppen();
-  planHerlaad();
+// ── Tijdschema ────────────────────────────────────────────────────
+function intervalVoorNu() {
+  var nu  = new Date();
+  var min = nu.getHours() * 60 + nu.getMinutes();
+  if (min >= 7*60+30 && min < 8*60+30)  return 1  * 60 * 1000;
+  if (min >= 8*60+30 && min < 10*60+5)  return 10 * 60 * 1000;
+  if (min >= 10*60+5 && min < 18*60)    return 30 * 60 * 1000;
+  return null;
+}
+
+function planHerlaad() {
+  if (herlaadTimer) clearTimeout(herlaadTimer);
+  var interval = intervalVoorNu();
+  if (!interval) {
+    var nu      = new Date();
+    var min     = nu.getHours() * 60 + nu.getMinutes();
+    var tot730  = (7*60+30) - min;
+    if (tot730 <= 0) tot730 += 24 * 60;
+    herlaadTimer = setTimeout(function() { herlaadAlles(); planHerlaad(); }, tot730 * 60 * 1000);
+    return;
+  }
+  herlaadTimer = setTimeout(function() { herlaadAlles(); planHerlaad(); }, interval);
+}
+
+async function herlaadAlles() {
+  await bouwKnoppen();
+  if (activePdfMap) await laadPdf(activePdfMap, false);
+}
+
+// ── Links ─────────────────────────────────────────────────────────
+async function haalLinks(forceer) {
+  if (cachedLinks && !forceer) return cachedLinks;
+  var res = await fetch('/api/links');
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  cachedLinks = await res.json();
+  return cachedLinks;
+}
+
+async function bouwKnoppen() {
+  var container = document.getElementById('dates');
+  var spacer    = container.querySelector('.sectie-spacer');
+  container.querySelectorAll('.datum-btn').forEach(function(b) { b.remove(); });
+  try {
+    var links = await haalLinks(true);
+    ['vandaag', 'morgen'].forEach(function(map) {
+      var info = links[map];
+      if (!info) return;
+      var btn = document.createElement('button');
+      btn.className = 'date-btn datum-btn';
+      btn.setAttribute('data-map', map);
+      btn.setAttribute('data-label', info.label);
+      btn.onclick = function() { openPdf(this); };
+      btn.innerHTML = '<span>' + info.label + '</span>';
+      container.insertBefore(btn, spacer);
+    });
+    if (links.infobord) {
+      document.getElementById('infobordLabel').textContent = links.infobord.label || 'Infobord';
+      document.getElementById('infobordBtn').style.display = '';
+    }
+  } catch(e) { console.error('bouwKnoppen:', e); }
+}
+
+// ── PDF laden ─────────────────────────────────────────────────────
+async function laadPdf(map, forceer) {
+  var el    = document.querySelector('.date-btn.datum-btn[data-map="' + map + '"]');
+  var label = el ? el.getAttribute('data-label') : map;
+
+  if (isMobiel) {
+    pdfCache[map] = { label: label };
+    return;
+  }
+
+  var cached  = pdfCache[map];
+  var headers = {};
+  if (cached && cached.etag && !forceer) headers['If-None-Match'] = cached.etag;
+
+  var res;
+  try { res = await fetch('/api/proxy?map=' + map, { headers }); }
+  catch(e) { return; }
+  if (res.status === 304) return;
+
+  var etag = res.headers.get('ETag') || ('' + Date.now());
+  var blob = await res.blob();
+  var url  = URL.createObjectURL(blob);
+
+  if (cached && cached.blobUrl) URL.revokeObjectURL(cached.blobUrl);
+  pdfCache[map] = { blobUrl: url, etag: etag, label: label };
+
+  if (map === activePdfMap) zetPcViewer(map);
+}
+
+function zetPcViewer(map) {
+  var cached = pdfCache[map];
+  if (!cached || !cached.blobUrl) return;
+  var frame = document.getElementById('pdfFrame');
+  frame.src = cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
+  frame.onload = function() { frame.classList.add('geladen'); };
+}
+
+function openMobielPdf() {
+  if (activePdfMap) window.location.href = '/api/bekijk?map=' + activePdfMap;
+}
+
+function openPdf(btn) {
+  document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+
+  var map   = btn.getAttribute('data-map');
+  var label = btn.getAttribute('data-label');
+  activePdfMap = map;
+
+  if (isMobiel) {
+    document.getElementById('pdfMobielLabel').textContent = label;
+    document.getElementById('pdfMobielContainer').classList.add('visible');
+    document.getElementById('pdfContainer').classList.remove('visible');
+    startGlow('glowCanvasMobiel', null);
+  } else {
+    document.getElementById('pdfLabel').textContent = label;
+    document.getElementById('pdfContainer').classList.add('visible');
+    document.getElementById('pdfMobielContainer').classList.remove('visible');
+    document.getElementById('pdfContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    startGlow('glowCanvas', 'pdfFrame');
+  }
+
+  if (pdfCache[map]) {
+    if (!isMobiel) zetPcViewer(map);
+    laadPdf(map, false);
+  } else {
+    laadPdf(map, true);
+  }
+}
+
+function closePdf() {
+  activePdfMap = null;
+  document.getElementById('pdfContainer').classList.remove('visible');
+  document.getElementById('pdfMobielContainer').classList.remove('visible');
+  document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
+  var frame = document.getElementById('pdfFrame');
+  frame.classList.remove('geladen');
+  frame.src = '';
+}
+
+function downloadInfobord() {
+  var a = document.createElement('a');
+  a.href = '/api/proxy?bestand=infobord';
+  a.download = 'infobord.pptx';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+bouwKnoppen();
+planHerlaad();
 </script>
 </body>
 </html>
