@@ -12,29 +12,79 @@ module.exports = async (req, res) => {
   <title>Roosterwijziging</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
+
+    @keyframes glow1 {
+      0%,100% { transform: translate(0%, 0%); }
+      50%      { transform: translate(-60%, -70%); }
+    }
+    @keyframes glow2 {
+      0%,100% { transform: translate(0%, 0%); }
+      50%      { transform: translate(55%, 65%); }
+    }
+    @keyframes glow3 {
+      0%,100% { transform: translate(0%, 0%); }
+      50%      { transform: translate(-30%, 40%); }
+    }
+
     html, body {
       min-height: 100%;
-      background:
-        radial-gradient(ellipse at 20% 60%, rgba(232,99,74,0.13) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 30%, rgba(212,90,114,0.10) 0%, transparent 55%),
-        #1a1a1a;
+      background: #1a1a1a;
+      position: relative;
+      overflow-x: hidden;
     }
+
+    .g1, .g2, .g3 {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(72px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .g1 {
+      width: 80vw; height: 60vw;
+      background: rgba(232,99,74,0.28);
+      bottom: -10%; right: -10%;
+      animation: glow1 7s ease-in-out infinite;
+    }
+    .g2 {
+      width: 70vw; height: 55vw;
+      background: rgba(212,90,114,0.22);
+      top: -10%; left: -10%;
+      animation: glow2 8s ease-in-out infinite;
+    }
+    .g3 {
+      width: 50vw; height: 40vw;
+      background: rgba(232,99,74,0.14);
+      top: 30%; left: 20%;
+      animation: glow3 9s ease-in-out infinite;
+    }
+
     #status {
+      position: relative;
+      z-index: 1;
       color: #6b6560;
       font-family: sans-serif;
       font-size: 0.9rem;
       text-align: center;
       padding: 48px 24px;
     }
+
+    #viewer {
+      position: relative;
+      z-index: 1;
+    }
+
     canvas {
       display: block;
       width: 100% !important;
       height: auto !important;
-      margin: 0;
     }
   </style>
 </head>
 <body>
+  <div class="g1"></div>
+  <div class="g2"></div>
+  <div class="g3"></div>
   <div id="status">Laden…</div>
   <div id="viewer"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>

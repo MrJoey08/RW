@@ -157,17 +157,60 @@
     }
     .pdf-close:hover { color: var(--accent); }
 
+    @keyframes glow1 {
+      0%,100% { transform: translate(0%,   0%); }
+      50%      { transform: translate(-60%, -70%); }
+    }
+    @keyframes glow2 {
+      0%,100% { transform: translate(0%,  0%); }
+      50%      { transform: translate(55%, 65%); }
+    }
+    @keyframes glow3 {
+      0%,100% { transform: translate(0%,   0%); }
+      50%      { transform: translate(-30%, 40%); }
+    }
+
     .iframe-wrapper {
       width: 100%;
       aspect-ratio: 1 / 1.4142;
       position: relative;
       overflow: hidden;
-      /* laadscherm: subtiele oranje/roze glow terwijl PDF laadt */
-      background:
-        radial-gradient(ellipse at 20% 60%, rgba(232,99,74,0.13) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 30%, rgba(212,90,114,0.10) 0%, transparent 55%),
-        radial-gradient(ellipse at 55% 80%, rgba(232,99,74,0.07) 0%, transparent 50%),
-        #1a1a1a;
+      background: #1a1a1a;
+    }
+
+    .iframe-wrapper::before,
+    .iframe-wrapper::after,
+    .iframe-wrapper .glow3 {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(48px);
+      pointer-events: none;
+    }
+
+    .iframe-wrapper::before {
+      width: 70%; height: 55%;
+      background: rgba(232,99,74,0.28);
+      bottom: -15%; right: -15%;
+      animation: glow1 7s ease-in-out infinite;
+    }
+
+    .glow-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(48px);
+      pointer-events: none;
+      width: 45%; height: 40%;
+      background: rgba(232,99,74,0.15);
+      top: 30%; left: 25%;
+      animation: glow3 9s ease-in-out infinite;
+    }
+
+    .iframe-wrapper::after {
+      width: 60%; height: 50%;
+      background: rgba(212,90,114,0.22);
+      top: -15%; left: -15%;
+      animation: glow2 8s ease-in-out infinite;
     }
 
     .iframe-wrapper iframe {
@@ -192,12 +235,44 @@
 
     .pdf-mobiel-container.visible { display: block; }
 
+    @keyframes glow3 {
+      0%,100% { transform: translate(0%, 0%); }
+      50%      { transform: translate(-30%, 40%); }
+    }
+
     .pdf-mobiel-body {
       padding: 48px 24px;
       text-align: center;
-      background:
-        radial-gradient(ellipse at 30% 50%, rgba(232,99,74,0.18) 0%, transparent 65%),
-        radial-gradient(ellipse at 75% 40%, rgba(212,90,114,0.15) 0%, transparent 60%);
+      position: relative;
+      overflow: hidden;
+      background: #1a1a1a;
+    }
+
+    .pdf-mobiel-body::before {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(48px);
+      width: 70%; height: 120%;
+      background: rgba(232,99,74,0.28);
+      bottom: -20%; right: -20%;
+      animation: glow1 7s ease-in-out infinite;
+    }
+
+    .pdf-mobiel-body::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(48px);
+      width: 60%; height: 110%;
+      background: rgba(212,90,114,0.22);
+      top: -20%; left: -20%;
+      animation: glow2 8s ease-in-out infinite;
+    }
+
+    .pdf-mobiel-btn {
+      position: relative;
+      z-index: 1;
     }
 
     .pdf-mobiel-btn {
@@ -429,6 +504,11 @@
     a.click();
     document.body.removeChild(a);
   }
+
+  // Voeg derde glow blob toe aan iframe wrapper
+  var blob = document.createElement('div');
+  blob.className = 'glow-blob';
+  document.querySelector('.iframe-wrapper').appendChild(blob);
 
   bouwKnoppen();
   planHerlaad();
