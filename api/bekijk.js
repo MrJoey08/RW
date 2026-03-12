@@ -13,10 +13,13 @@ module.exports = async (req, res) => {
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html, body {
-      background: #1a1a1a;
       min-height: 100%;
+      background:
+        radial-gradient(ellipse at 20% 60%, rgba(232,99,74,0.13) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 30%, rgba(212,90,114,0.10) 0%, transparent 55%),
+        #1a1a1a;
     }
-    #laad {
+    #status {
       color: #6b6560;
       font-family: sans-serif;
       font-size: 0.9rem;
@@ -25,52 +28,53 @@ module.exports = async (req, res) => {
     }
     canvas {
       display: block;
-      width: 100%;
-      height: auto;
-      margin: 0 auto;
+      width: 100% !important;
+      height: auto !important;
+      margin: 0;
     }
   </style>
 </head>
 <body>
-  <div id="laad">Laden…</div>
+  <div id="status">Laden…</div>
   <div id="viewer"></div>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    async function laadPdf() {
-      const loadingTask = pdfjsLib.getDocument('/api/proxy?map=${map}');
-      const pdf = await loadingTask.promise;
-
-      document.getElementById('laad').remove();
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page    = await pdf.getPage(i);
-        const schaal  = window.devicePixelRatio * (window.innerWidth / page.getViewport({ scale: 1 }).width);
-        const viewport = page.getViewport({ scale: schaal });
-
-        const canvas  = document.createElement('canvas');
-        canvas.width  = viewport.width;
-        canvas.height = viewport.height;
-
-        await page.render({
-          canvasContext: canvas.getContext('2d'),
-          viewport
-        }).promise;
-
-        document.getElementById('viewer').appendChild(canvas);
-      }
-    }
-
-    laadPdf().catch(function(e) {
-      document.getElementById('laad').textContent = 'Kon PDF niet laden: ' + e.message;
-    });
+    pdfjsLib.getDocument({ url: '/api/proxy?map=${map}', disableStream: true })
+      .promise
+      .then(function(pdf) {
+        document.getElementById('status').style.display = 'none';
+        var chain = Promise.resolve();
+        for (var i = 1; i <= pdf.numPages; i++) {
+          (function(pageNum) {
+            chain = chain.then(function() {
+              return pdf.getPage(pageNum).then(function(page) {
+                var scale    = window.devicePixelRatio * 2;
+                var viewport = page.getViewport({ scale: scale });
+                var canvas   = document.createElement('canvas');
+                canvas.width  = viewport.width;
+                canvas.height = viewport.height;
+                return page.render({
+                  canvasContext: canvas.getContext('2d'),
+                  viewport: viewport
+                }).promise.then(function() {
+                  document.getElementById('viewer').appendChild(canvas);
+                });
+              });
+            });
+          })(i);
+        }
+        return chain;
+      })
+      .catch(function(err) {
+        document.getElementById('status').textContent = 'Fout: ' + err.message;
+      });
   </script>
 </body>
 </html>`;
 
-  res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.status(200).send(html);
 };
