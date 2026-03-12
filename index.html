@@ -301,7 +301,10 @@ var herlaadTimer = null;
 var activePdfMap = null;
 
 // ── WebGL glow shader ─────────────────────────────────────────────
-function startGlow(canvasId, stopOnLoad) {
+var glowInstances = {};
+
+function startGlow(canvasId) {
+  if (glowInstances[canvasId]) return; // al actief, niet opnieuw starten
   var canvas = document.getElementById(canvasId);
   if (!canvas) return;
   var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -351,9 +354,7 @@ function startGlow(canvasId, stopOnLoad) {
 
   var tLoc   = gl.getUniformLocation(prog, 't');
   var resLoc = gl.getUniformLocation(prog, 'res');
-
-  var running = true;
-  var start   = performance.now();
+  var start  = performance.now();
 
   function resize() {
     canvas.width  = canvas.offsetWidth;
@@ -363,7 +364,6 @@ function startGlow(canvasId, stopOnLoad) {
   resize();
 
   function tick() {
-    if (!running) return;
     var elapsed = (performance.now() - start) / 1000;
     gl.uniform1f(tLoc, elapsed);
     gl.uniform2f(resLoc, canvas.width || 1, canvas.height || 1);
@@ -371,12 +371,7 @@ function startGlow(canvasId, stopOnLoad) {
     requestAnimationFrame(tick);
   }
   tick();
-
-  if (stopOnLoad) {
-    document.getElementById(stopOnLoad).addEventListener('load', function() {
-      running = false;
-    });
-  }
+  glowInstances[canvasId] = true;
 }
 
 // ── Tijdschema ────────────────────────────────────────────────────
@@ -501,10 +496,11 @@ function zetPcViewer(map) {
   if (!cached || !cached.blobUrl) return;
   var frame = document.getElementById('pdfFrame');
   frame.classList.remove('geladen');
-  frame.src = cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
-  frame.onload = function() {
+  frame.src = '';
+  setTimeout(function() {
+    frame.src = cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
     setTimeout(function() { frame.classList.add('geladen'); }, 2000);
-  };
+  }, 50);
 }
 
 function zetStatus(tekst) {
