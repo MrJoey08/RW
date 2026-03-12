@@ -137,31 +137,13 @@
     }
     .pdf-close:hover { color: var(--accent); }
 
-    /* iframe hok */
-    .iframe-wrapper {
-      width: 100%;
-      aspect-ratio: 1 / 1.4142;
-      position: relative;
-      overflow: hidden;
-      background: #1a1a1a;
-    }
+    /* iframe hok — niet meer in gebruik, PDF.js wordt overal gebruikt */
     #glowCanvas {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      z-index: 1;
+      z-index: 0;
     }
-    .iframe-wrapper iframe {
-      position: absolute;
-      top: 0; left: 0;
-      width: calc(100% + 17px);
-      height: calc(100% + 17px);
-      border: none;
-      z-index: 2;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-    }
-    .iframe-wrapper iframe.geladen { opacity: 1; }
 
     /* Mobiel hok */
     .pdf-mobiel-container {
@@ -264,28 +246,16 @@
     </div>
   </div>
 
-  <!-- PC -->
+  <!-- Universele PDF viewer (PDF.js) -->
   <div class="pdf-container" id="pdfContainer">
     <div class="pdf-header">
       <span class="pdf-label" id="pdfLabel"></span>
       <button class="pdf-close" onclick="closePdf()">&#x2715;</button>
     </div>
-    <div class="iframe-wrapper">
+    <div class="pdf-mobiel-body" id="pdfViewerBody">
       <canvas id="glowCanvas"></canvas>
-      <iframe id="pdfFrame" title="Roosterwijziging PDF"></iframe>
-    </div>
-  </div>
-
-  <!-- Mobiel -->
-  <div class="pdf-mobiel-container" id="pdfMobielContainer">
-    <div class="pdf-header">
-      <span class="pdf-label" id="pdfMobielLabel"></span>
-      <button class="pdf-close" onclick="closePdf()">&#x2715;</button>
-    </div>
-    <div class="pdf-mobiel-body" id="pdfMobielBody">
-      <canvas id="glowCanvasMobiel"></canvas>
-      <div class="pdf-mobiel-laadbericht" id="pdfMobielStatus">Laden…</div>
-      <div class="pdf-mobiel-paginas" id="pdfMobielPaginas"></div>
+      <div class="pdf-mobiel-laadbericht" id="pdfStatus">Laden…</div>
+      <div class="pdf-mobiel-paginas" id="pdfPaginas"></div>
     </div>
   </div>
 
@@ -293,7 +263,6 @@
 </div>
 
 <script>
-var isMobiel = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 var cachedLinks  = null;
 var pdfCache     = {};
 var herlaadTimer = null;
@@ -452,12 +421,9 @@ async function laadPdf(map, forceer) {
 
   var res;
   try { res = await fetch('/api/proxy?map=' + map, { headers }); }
-  catch(e) {
-    if (isMobiel) zetMobielStatus('Kon PDF niet laden.');
-    return;
-  }
+  catch(e) { zetStatus('Kon PDF niet laden.'); return; }
   if (res.status === 304) {
-    if (isMobiel && map === activePdfMap && cached && cached.blobUrl) zetMobielViewer(cached.blobUrl);
+    if (map === activePdfMap && cached && cached.blobUrl) zetViewer(cached.blobUrl);
     return;
   }
 
@@ -468,34 +434,20 @@ async function laadPdf(map, forceer) {
   if (cached && cached.blobUrl) URL.revokeObjectURL(cached.blobUrl);
   pdfCache[map] = { blobUrl: url, etag: etag, label: label };
 
-  if (map === activePdfMap) {
-    if (isMobiel) zetMobielViewer(url);
-    else          zetPcViewer(map);
-  }
+  if (map === activePdfMap) zetViewer(url);
 }
 
-function zetPcViewer(map) {
-  var cached = pdfCache[map];
-  if (!cached || !cached.blobUrl) return;
-  var frame = document.getElementById('pdfFrame');
-  frame.src = cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
-  frame.onload = function() { frame.classList.add('geladen'); };
-}
-
-function zetMobielStatus(tekst) {
-  var s = document.getElementById('pdfMobielStatus');
+function zetStatus(tekst) {
+  var s = document.getElementById('pdfStatus');
   if (s) { s.textContent = tekst; s.style.display = ''; }
 }
 
-function zetMobielViewer(blobUrl) {
-  var status  = document.getElementById('pdfMobielStatus');
-  var paginas = document.getElementById('pdfMobielPaginas');
+function zetViewer(blobUrl) {
+  var status  = document.getElementById('pdfStatus');
+  var paginas = document.getElementById('pdfPaginas');
   if (!paginas) return;
 
-  if (!window.pdfjsLib) {
-    zetMobielStatus('PDF.js niet beschikbaar.');
-    return;
-  }
+  if (!window.pdfjsLib) { zetStatus('PDF.js niet beschikbaar.'); return; }
 
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -509,8 +461,9 @@ function zetMobielViewer(blobUrl) {
         (function(n) {
           chain = chain.then(function() {
             return pdf.getPage(n).then(function(page) {
-              var schaal = (paginas.offsetWidth || 320) / page.getViewport({ scale: 1 }).width;
-              var vp = page.getViewport({ scale: schaal * window.devicePixelRatio });
+              var breedte = paginas.offsetWidth || 320;
+              var schaal  = breedte / page.getViewport({ scale: 1 }).width;
+              var vp = page.getViewport({ scale: schaal * (window.devicePixelRatio || 1) });
               var c  = document.createElement('canvas');
               c.width  = vp.width;
               c.height = vp.height;
@@ -522,7 +475,7 @@ function zetMobielViewer(blobUrl) {
       }
       return chain;
     })
-    .catch(function(e) { zetMobielStatus('Fout: ' + e.message); });
+    .catch(function(e) { zetStatus('Fout: ' + e.message); });
 }
 
 function openPdf(btn) {
@@ -533,26 +486,16 @@ function openPdf(btn) {
   var label = btn.getAttribute('data-label');
   activePdfMap = map;
 
-  if (isMobiel) {
-    document.getElementById('pdfMobielLabel').textContent = label;
-    document.getElementById('pdfMobielContainer').classList.add('visible');
-    document.getElementById('pdfContainer').classList.remove('visible');
-    document.getElementById('pdfMobielPaginas').innerHTML = '';
-    zetMobielStatus('Laden…');
-    document.getElementById('pdfMobielStatus').style.display = '';
-    document.getElementById('pdfMobielContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    startGlow('glowCanvasMobiel', null);
-  } else {
-    document.getElementById('pdfLabel').textContent = label;
-    document.getElementById('pdfContainer').classList.add('visible');
-    document.getElementById('pdfMobielContainer').classList.remove('visible');
-    document.getElementById('pdfContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    startGlow('glowCanvas', 'pdfFrame');
-  }
+  document.getElementById('pdfLabel').textContent = label;
+  document.getElementById('pdfContainer').classList.add('visible');
+  document.getElementById('pdfPaginas').innerHTML = '';
+  zetStatus('Laden…');
+  document.getElementById('pdfStatus').style.display = '';
+  document.getElementById('pdfContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  startGlow('glowCanvas', null);
 
   if (pdfCache[map] && pdfCache[map].blobUrl) {
-    if (isMobiel) zetMobielViewer(pdfCache[map].blobUrl);
-    else          zetPcViewer(map);
+    zetViewer(pdfCache[map].blobUrl);
     laadPdf(map, false);
   } else {
     laadPdf(map, true);
@@ -562,12 +505,8 @@ function openPdf(btn) {
 function closePdf() {
   activePdfMap = null;
   document.getElementById('pdfContainer').classList.remove('visible');
-  document.getElementById('pdfMobielContainer').classList.remove('visible');
-  document.getElementById('pdfMobielPaginas').innerHTML = '';
+  document.getElementById('pdfPaginas').innerHTML = '';
   document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
-  var frame = document.getElementById('pdfFrame');
-  frame.classList.remove('geladen');
-  frame.src = '';
 }
 
 function initRing() {
