@@ -175,37 +175,33 @@
     }
     .pdf-mobiel-container.visible { display: block; }
     .pdf-mobiel-body {
-      padding: 64px 24px;
-      text-align: center;
       position: relative;
-      overflow: hidden;
       background: #1a1a1a;
+      min-height: 120px;
     }
     #glowCanvasMobiel {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
+      z-index: 0;
     }
-    .pdf-mobiel-btn {
+    .pdf-mobiel-laadbericht {
       position: relative;
       z-index: 2;
-      display: inline-block;
-      padding: 13px 52px;
-      background: rgba(26,26,26,0.72);
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 10px;
-      color: var(--text);
+      color: rgba(232,224,216,0.45);
       font-family: 'DM Sans', sans-serif;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      letter-spacing: 0.04em;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      -webkit-tap-highlight-color: transparent;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .pdf-mobiel-paginas {
+      position: relative;
+      z-index: 2;
+    }
+    .pdf-mobiel-paginas canvas {
+      display: block;
+      width: 100% !important;
+      height: auto !important;
     }
     footer {
       margin-top: auto;
@@ -286,9 +282,10 @@
       <span class="pdf-label" id="pdfMobielLabel"></span>
       <button class="pdf-close" onclick="closePdf()">&#x2715;</button>
     </div>
-    <div class="pdf-mobiel-body">
+    <div class="pdf-mobiel-body" id="pdfMobielBody">
       <canvas id="glowCanvasMobiel"></canvas>
-      <button class="pdf-mobiel-btn" onclick="openMobielPdf()">open</button>
+      <div class="pdf-mobiel-laadbericht" id="pdfMobielStatus">Laden…</div>
+      <div class="pdf-mobiel-paginas" id="pdfMobielPaginas"></div>
     </div>
   </div>
 
@@ -449,19 +446,20 @@ async function laadPdf(map, forceer) {
   var el    = document.querySelector('.date-btn.datum-btn[data-map="' + map + '"]');
   var label = el ? el.getAttribute('data-label') : map;
 
-  if (isMobiel) {
-    pdfCache[map] = { label: label };
-    return;
-  }
-
   var cached  = pdfCache[map];
   var headers = {};
   if (cached && cached.etag && !forceer) headers['If-None-Match'] = cached.etag;
 
   var res;
   try { res = await fetch('/api/proxy?map=' + map, { headers }); }
-  catch(e) { return; }
-  if (res.status === 304) return;
+  catch(e) {
+    if (isMobiel) zetMobielStatus('Kon PDF niet laden.');
+    return;
+  }
+  if (res.status === 304) {
+    if (isMobiel && map === activePdfMap && cached && cached.blobUrl) zetMobielViewer(cached.blobUrl);
+    return;
+  }
 
   var etag = res.headers.get('ETag') || ('' + Date.now());
   var blob = await res.blob();
@@ -470,7 +468,10 @@ async function laadPdf(map, forceer) {
   if (cached && cached.blobUrl) URL.revokeObjectURL(cached.blobUrl);
   pdfCache[map] = { blobUrl: url, etag: etag, label: label };
 
-  if (map === activePdfMap) zetPcViewer(map);
+  if (map === activePdfMap) {
+    if (isMobiel) zetMobielViewer(url);
+    else          zetPcViewer(map);
+  }
 }
 
 function zetPcViewer(map) {
@@ -481,16 +482,47 @@ function zetPcViewer(map) {
   frame.onload = function() { frame.classList.add('geladen'); };
 }
 
-function openMobielPdf() {
-  if (activePdfMap) {
-    var a = document.createElement('a');
-    a.href = '/api/bekijk?map=' + activePdfMap;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+function zetMobielStatus(tekst) {
+  var s = document.getElementById('pdfMobielStatus');
+  if (s) { s.textContent = tekst; s.style.display = ''; }
+}
+
+function zetMobielViewer(blobUrl) {
+  var status  = document.getElementById('pdfMobielStatus');
+  var paginas = document.getElementById('pdfMobielPaginas');
+  if (!paginas) return;
+
+  if (!window.pdfjsLib) {
+    zetMobielStatus('PDF.js niet beschikbaar.');
+    return;
   }
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  pdfjsLib.getDocument({ url: blobUrl, disableStream: true })
+    .promise.then(function(pdf) {
+      if (status) status.style.display = 'none';
+      paginas.innerHTML = '';
+      var chain = Promise.resolve();
+      for (var i = 1; i <= pdf.numPages; i++) {
+        (function(n) {
+          chain = chain.then(function() {
+            return pdf.getPage(n).then(function(page) {
+              var schaal = (paginas.offsetWidth || 320) / page.getViewport({ scale: 1 }).width;
+              var vp = page.getViewport({ scale: schaal * window.devicePixelRatio });
+              var c  = document.createElement('canvas');
+              c.width  = vp.width;
+              c.height = vp.height;
+              return page.render({ canvasContext: c.getContext('2d'), viewport: vp })
+                .promise.then(function() { paginas.appendChild(c); });
+            });
+          });
+        })(i);
+      }
+      return chain;
+    })
+    .catch(function(e) { zetMobielStatus('Fout: ' + e.message); });
 }
 
 function openPdf(btn) {
@@ -505,6 +537,10 @@ function openPdf(btn) {
     document.getElementById('pdfMobielLabel').textContent = label;
     document.getElementById('pdfMobielContainer').classList.add('visible');
     document.getElementById('pdfContainer').classList.remove('visible');
+    document.getElementById('pdfMobielPaginas').innerHTML = '';
+    zetMobielStatus('Laden…');
+    document.getElementById('pdfMobielStatus').style.display = '';
+    document.getElementById('pdfMobielContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
     startGlow('glowCanvasMobiel', null);
   } else {
     document.getElementById('pdfLabel').textContent = label;
@@ -514,8 +550,9 @@ function openPdf(btn) {
     startGlow('glowCanvas', 'pdfFrame');
   }
 
-  if (pdfCache[map]) {
-    if (!isMobiel) zetPcViewer(map);
+  if (pdfCache[map] && pdfCache[map].blobUrl) {
+    if (isMobiel) zetMobielViewer(pdfCache[map].blobUrl);
+    else          zetPcViewer(map);
     laadPdf(map, false);
   } else {
     laadPdf(map, true);
@@ -526,6 +563,7 @@ function closePdf() {
   activePdfMap = null;
   document.getElementById('pdfContainer').classList.remove('visible');
   document.getElementById('pdfMobielContainer').classList.remove('visible');
+  document.getElementById('pdfMobielPaginas').innerHTML = '';
   document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
   var frame = document.getElementById('pdfFrame');
   frame.classList.remove('geladen');
@@ -595,5 +633,6 @@ function downloadInfobord() {
 bouwKnoppen();
 planHerlaad();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </body>
 </html>
