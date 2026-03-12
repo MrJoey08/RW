@@ -22,19 +22,19 @@ function haalOp(path) {
   });
 }
 
-async function haalLinks() {
+async function vindPdf(map) {
+  const { body } = await haalOp(`/${map}/`);
+  const html = body.toString('utf8');
+  const m = html.match(/href="([^"]*\.pdf)"/i) || html.match(/([\w%.\-]+\.pdf)/i);
+  return m ? decodeURIComponent(m[1].split('/').pop()) : null;
+}
+
+async function vindPptx() {
   const { body } = await haalOp('/');
   const html = body.toString('utf8');
-  const regex = /href="([^"]+\.(pdf|pptx))"/gi;
-  const links = {};
-  let m;
-  while ((m = regex.exec(html)) !== null) {
-    const pad = m[1];
-    if (pad.startsWith('vandaag/')) links.vandaag = pad;
-    else if (pad.startsWith('morgen/')) links.morgen = pad;
-    else if (pad.startsWith('info/'))   links.infobord = pad;
-  }
-  return links;
+  // Haal het volledige pad op, bijv. "info/Week 11.pptx"
+  const m = html.match(/href="([^"?#]*\.pptx)"/i);
+  return m ? decodeURIComponent(m[1]) : 'info/infobord.pptx';
 }
 
 module.exports = async (req, res) => {
@@ -43,31 +43,42 @@ module.exports = async (req, res) => {
   const { map, bestand } = req.query;
 
   try {
-    const links = await haalLinks();
-
+    // ── PDF: ?map=vandaag of ?map=morgen ────────────────────────────
     if (map && ['vandaag', 'morgen'].includes(map)) {
-      const pad = links[map];
-      if (!pad) return res.status(404).json({ error: `Geen PDF gevonden voor ${map}` });
+      const naam = await vindPdf(map);
+      if (!naam) return res.status(404).json({ error: `Geen PDF in /${map}/` });
 
-      const upstream = await haalOp('/' + encodeURI(pad));
+      const upstream = await haalOp(`/${map}/${encodeURIComponent(naam)}`);
       if (upstream.status === 404) return res.status(404).json({ error: 'PDF niet gevonden' });
 
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Cache-Control', 'no-store');
+      // ETag gebaseerd op bestandsnaam + last-modified zodat browser
+      // wijzigingen detecteert zonder de inhoud opnieuw te downloaden
+      const lastMod = upstream.headers['last-modified'] || '';
+      const etag    = `"${naam}-${lastMod}"`;
 
+      // Controleer If-None-Match — stuur 304 als niets veranderd
+      const clientEtag = req.headers['if-none-match'];
+      if (clientEtag && clientEtag === etag) {
+        return res.status(304).end();
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('ETag', etag);
+      res.setHeader('Cache-Control', 'no-cache'); // altijd revalideren
+      if (upstream.headers['content-length'])
+        res.setHeader('Content-Length', upstream.headers['content-length']);
       return res.status(200).end(upstream.body);
     }
 
+    // ── PPTX: ?bestand=infobord ──────────────────────────────────────
     if (bestand === 'infobord') {
-      const pad = links.infobord;
-      if (!pad) return res.status(404).json({ error: 'Infobord niet gevonden' });
-
+      const pad  = await vindPptx();               // bijv. "info/Week 11.pptx"
+      const naam = pad.split('/').pop();            // bijv. "Week 11.pptx"
       const upstream = await haalOp('/' + encodeURI(pad));
-      const naam = pad.split('/').pop();
-
+      if (upstream.status === 404) return res.status(404).json({ error: 'Infobord niet gevonden' });
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-      res.setHeader('Content-Disposition', `attachment; filename="${naam}"`);
-      res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=60');
+      res.setHeader('Content-Disposition', 'attachment; filename="' + naam + '"');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
       return res.status(200).end(upstream.body);
     }
 
