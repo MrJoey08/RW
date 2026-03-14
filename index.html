@@ -137,7 +137,7 @@
     }
     .pdf-close:hover { color: var(--accent); }
 
-    /* iframe hok */
+    /* iframe hok — PC */
     .iframe-wrapper {
       width: 100%;
       aspect-ratio: 1 / 1.4142;
@@ -175,31 +175,33 @@
     }
     .pdf-mobiel-container.visible { display: block; }
     .pdf-mobiel-body {
-      padding: 64px 24px;
-      text-align: center;
       position: relative;
-      overflow: hidden;
       background: #1a1a1a;
+      min-height: 120px;
     }
     #glowCanvasMobiel {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
+      z-index: 0;
     }
-    .pdf-mobiel-btn {
+    .pdf-mobiel-laadbericht {
       position: relative;
       z-index: 2;
-      display: inline-block;
-      padding: 13px 52px;
-      background: rgba(36,36,36,0.85);
-      border: 1px solid #3a3a3a;
-      border-radius: 10px;
-      color: var(--text);
+      color: rgba(232,224,216,0.45);
       font-family: 'DM Sans', sans-serif;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      letter-spacing: 0.04em;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .pdf-mobiel-paginas {
+      position: relative;
+      z-index: 2;
+    }
+    .pdf-mobiel-paginas canvas {
+      display: block;
+      width: 100% !important;
+      height: auto !important;
     }
     footer {
       margin-top: auto;
@@ -207,6 +209,30 @@
       font-size: 0.75rem;
       color: var(--muted);
       text-align: center;
+    }
+
+    /* Infobord ring wrapper */
+    .infobord-wrapper {
+      width: 100%;
+      position: relative;
+    }
+    .infobord-ring {
+      position: absolute;
+      inset: -5px;
+      border-radius: 15px;
+      pointer-events: none;
+      overflow: visible;
+    }
+    .infobord-ring rect {
+      fill: none;
+      stroke: url(#ringGrad);
+      stroke-width: 2.5;
+      rx: 13;
+      ry: 13;
+    }
+    @keyframes ringDash {
+      from { stroke-dashoffset: var(--ring-len); }
+      to   { stroke-dashoffset: 0; }
     }
   </style>
 </head>
@@ -222,12 +248,23 @@
     <div class="sectie-label">Roosterwijzigingen</div>
     <div class="sectie-spacer"></div>
     <div class="sectie-label">Informatie</div>
-    <button class="date-btn" id="infobordBtn" style="display:none" onclick="downloadInfobord()">
-      <span id="infobordLabel">Infobord</span>
-    </button>
+    <div class="infobord-wrapper" id="infobordWrapper" style="display:none">
+      <button class="date-btn" id="infobordBtn" onclick="downloadInfobord()">
+        <span id="infobordLabel">Infobord</span>
+      </button>
+      <svg class="infobord-ring" id="infobordRing" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#e8634a"/>
+            <stop offset="100%" stop-color="#d45a72"/>
+          </linearGradient>
+        </defs>
+        <rect id="ringRect" rx="13" ry="13"/>
+      </svg>
+    </div>
   </div>
 
-  <!-- PC -->
+  <!-- PC: iframe viewer -->
   <div class="pdf-container" id="pdfContainer">
     <div class="pdf-header">
       <span class="pdf-label" id="pdfLabel"></span>
@@ -239,15 +276,16 @@
     </div>
   </div>
 
-  <!-- Mobiel -->
+  <!-- Mobiel: PDF.js inline viewer -->
   <div class="pdf-mobiel-container" id="pdfMobielContainer">
     <div class="pdf-header">
       <span class="pdf-label" id="pdfMobielLabel"></span>
       <button class="pdf-close" onclick="closePdf()">&#x2715;</button>
     </div>
-    <div class="pdf-mobiel-body">
+    <div class="pdf-mobiel-body" id="pdfViewerBody">
       <canvas id="glowCanvasMobiel"></canvas>
-      <button class="pdf-mobiel-btn" onclick="openMobielPdf()">open</button>
+      <div class="pdf-mobiel-laadbericht" id="pdfStatus">Laden…</div>
+      <div class="pdf-mobiel-paginas" id="pdfPaginas"></div>
     </div>
   </div>
 
@@ -255,14 +293,18 @@
 </div>
 
 <script>
-var isMobiel = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+var isMobiel = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+             || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 var cachedLinks  = null;
 var pdfCache     = {};
 var herlaadTimer = null;
 var activePdfMap = null;
 
 // ── WebGL glow shader ─────────────────────────────────────────────
-function startGlow(canvasId, stopOnLoad) {
+var glowInstances = {};
+
+function startGlow(canvasId) {
+  if (glowInstances[canvasId]) return; // al actief, niet opnieuw starten
   var canvas = document.getElementById(canvasId);
   if (!canvas) return;
   var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -312,9 +354,7 @@ function startGlow(canvasId, stopOnLoad) {
 
   var tLoc   = gl.getUniformLocation(prog, 't');
   var resLoc = gl.getUniformLocation(prog, 'res');
-
-  var running = true;
-  var start   = performance.now();
+  var start  = performance.now();
 
   function resize() {
     canvas.width  = canvas.offsetWidth;
@@ -324,7 +364,6 @@ function startGlow(canvasId, stopOnLoad) {
   resize();
 
   function tick() {
-    if (!running) return;
     var elapsed = (performance.now() - start) / 1000;
     gl.uniform1f(tLoc, elapsed);
     gl.uniform2f(resLoc, canvas.width || 1, canvas.height || 1);
@@ -332,12 +371,7 @@ function startGlow(canvasId, stopOnLoad) {
     requestAnimationFrame(tick);
   }
   tick();
-
-  if (stopOnLoad) {
-    document.getElementById(stopOnLoad).addEventListener('load', function() {
-      running = false;
-    });
-  }
+  glowInstances[canvasId] = true;
 }
 
 // ── Tijdschema ────────────────────────────────────────────────────
@@ -358,22 +392,40 @@ function planHerlaad() {
     var min     = nu.getHours() * 60 + nu.getMinutes();
     var tot730  = (7*60+30) - min;
     if (tot730 <= 0) tot730 += 24 * 60;
-    herlaadTimer = setTimeout(function() { herlaadAlles(); planHerlaad(); }, tot730 * 60 * 1000);
+    herlaadTimer = setTimeout(function() { herlaadAlsNietActief(); planHerlaad(); }, tot730 * 60 * 1000);
     return;
   }
-  herlaadTimer = setTimeout(function() { herlaadAlles(); planHerlaad(); }, interval);
+  herlaadTimer = setTimeout(function() { herlaadAlsNietActief(); planHerlaad(); }, interval);
+}
+
+var gemistHerlaad = false;
+
+function herlaadAlsNietActief() {
+  if (document.hidden) {
+    herlaadAlles();
+  } else {
+    // Tabblad is actief — markeer als gemist, voer uit zodra gebruiker weggaat
+    gemistHerlaad = true;
+  }
 }
 
 async function herlaadAlles() {
+  gemistHerlaad = false;
   await bouwKnoppen();
   if (activePdfMap) await laadPdf(activePdfMap, false);
 }
+
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden && gemistHerlaad) {
+    herlaadAlles();
+  }
+});
 
 // ── Links ─────────────────────────────────────────────────────────
 async function haalLinks(forceer) {
   if (cachedLinks && !forceer) return cachedLinks;
   var res = await fetch('/api/links');
-  if (!res.ok) return null;
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   cachedLinks = await res.json();
   return cachedLinks;
 }
@@ -384,7 +436,6 @@ async function bouwKnoppen() {
   container.querySelectorAll('.datum-btn').forEach(function(b) { b.remove(); });
   try {
     var links = await haalLinks(true);
-    if (!links) return;
     ['vandaag', 'morgen'].forEach(function(map) {
       var info = links[map];
       if (!info) return;
@@ -398,7 +449,8 @@ async function bouwKnoppen() {
     });
     if (links.infobord) {
       document.getElementById('infobordLabel').textContent = links.infobord.label || 'Infobord';
-      document.getElementById('infobordBtn').style.display = '';
+      document.getElementById('infobordWrapper').style.display = '';
+      initRing();
     }
   } catch(e) { console.error('bouwKnoppen:', e); }
 }
@@ -408,19 +460,23 @@ async function laadPdf(map, forceer) {
   var el    = document.querySelector('.date-btn.datum-btn[data-map="' + map + '"]');
   var label = el ? el.getAttribute('data-label') : map;
 
-  if (isMobiel) {
-    pdfCache[map] = { label: label };
-    return;
-  }
-
   var cached  = pdfCache[map];
   var headers = {};
   if (cached && cached.etag && !forceer) headers['If-None-Match'] = cached.etag;
 
   var res;
   try { res = await fetch('/api/proxy?map=' + map, { headers }); }
-  catch(e) { return; }
-  if (res.status === 304) return;
+  catch(e) {
+    if (isMobiel) zetStatus('Kon PDF niet laden.');
+    return;
+  }
+  if (res.status === 304) {
+    if (map === activePdfMap && cached && cached.blobUrl) {
+      if (isMobiel) zetViewer(cached.blobUrl);
+      else          zetPcViewer(map);
+    }
+    return;
+  }
 
   var etag = res.headers.get('ETag') || ('' + Date.now());
   var blob = await res.blob();
@@ -429,19 +485,74 @@ async function laadPdf(map, forceer) {
   if (cached && cached.blobUrl) URL.revokeObjectURL(cached.blobUrl);
   pdfCache[map] = { blobUrl: url, etag: etag, label: label };
 
-  if (map === activePdfMap) zetPcViewer(map);
+  if (map === activePdfMap) {
+    if (isMobiel) zetViewer(url);
+    else          zetPcViewer(map);
+  }
 }
 
 function zetPcViewer(map) {
   var cached = pdfCache[map];
   if (!cached || !cached.blobUrl) return;
   var frame = document.getElementById('pdfFrame');
-  frame.src = cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
-  frame.onload = function() { frame.classList.add('geladen'); };
+  frame.classList.remove('geladen');
+  frame.src = '';
+  setTimeout(function() {
+    frame.src = cached.blobUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit&pagemode=none';
+    setTimeout(function() { frame.classList.add('geladen'); }, 2000);
+  }, 50);
 }
 
-function openMobielPdf() {
-  if (activePdfMap) window.location.href = '/api/bekijk?map=' + activePdfMap;
+function zetStatus(tekst) {
+  var s = document.getElementById('pdfStatus');
+  if (s) { s.textContent = tekst; s.style.display = ''; }
+}
+
+function zetViewer(blobUrl) {
+  var status  = document.getElementById('pdfStatus');
+  var paginas = document.getElementById('pdfPaginas');
+  var container = document.getElementById('pdfMobielContainer');
+  if (!paginas) return;
+
+  if (!window.pdfjsLib) { zetStatus('PDF.js niet beschikbaar.'); return; }
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  pdfjsLib.getDocument({ url: blobUrl, disableStream: true })
+    .promise.then(function(pdf) {
+      if (status) status.style.display = 'none';
+      paginas.innerHTML = '';
+      var eersteGescrolld = false;
+      var chain = Promise.resolve();
+      for (var i = 1; i <= pdf.numPages; i++) {
+        (function(n) {
+          chain = chain.then(function() {
+            return pdf.getPage(n).then(function(page) {
+              var breedte = paginas.offsetWidth || 320;
+              var schaal  = breedte / page.getViewport({ scale: 1 }).width;
+              var vp = page.getViewport({ scale: schaal * (window.devicePixelRatio || 1) });
+              var c  = document.createElement('canvas');
+              c.width  = vp.width;
+              c.height = vp.height;
+              return page.render({ canvasContext: c.getContext('2d'), viewport: vp })
+                .promise.then(function() {
+                  paginas.appendChild(c);
+                  // Na eerste pagina: scroll zodat container in het midden staat
+                  if (!eersteGescrolld && container) {
+                    eersteGescrolld = true;
+                    setTimeout(function() {
+                      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 50);
+                  }
+                });
+            });
+          });
+        })(i);
+      }
+      return chain;
+    })
+    .catch(function(e) { zetStatus('Fout: ' + e.message); });
 }
 
 function openPdf(btn) {
@@ -456,17 +567,21 @@ function openPdf(btn) {
     document.getElementById('pdfMobielLabel').textContent = label;
     document.getElementById('pdfMobielContainer').classList.add('visible');
     document.getElementById('pdfContainer').classList.remove('visible');
+    document.getElementById('pdfPaginas').innerHTML = '';
+    zetStatus('Laden…');
+    document.getElementById('pdfStatus').style.display = '';
     startGlow('glowCanvasMobiel', null);
   } else {
     document.getElementById('pdfLabel').textContent = label;
     document.getElementById('pdfContainer').classList.add('visible');
     document.getElementById('pdfMobielContainer').classList.remove('visible');
     document.getElementById('pdfContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    startGlow('glowCanvas', 'pdfFrame');
+    startGlow('glowCanvas', null);
   }
 
-  if (pdfCache[map]) {
-    if (!isMobiel) zetPcViewer(map);
+  if (pdfCache[map] && pdfCache[map].blobUrl) {
+    if (isMobiel) zetViewer(pdfCache[map].blobUrl);
+    else          zetPcViewer(map);
     laadPdf(map, false);
   } else {
     laadPdf(map, true);
@@ -477,24 +592,80 @@ function closePdf() {
   activePdfMap = null;
   document.getElementById('pdfContainer').classList.remove('visible');
   document.getElementById('pdfMobielContainer').classList.remove('visible');
+  document.getElementById('pdfPaginas').innerHTML = '';
   document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
   var frame = document.getElementById('pdfFrame');
   frame.classList.remove('geladen');
   frame.src = '';
 }
 
+function initRing() {
+  var btn  = document.getElementById('infobordBtn');
+  var svg  = document.getElementById('infobordRing');
+  var rect = document.getElementById('ringRect');
+  if (!btn || !svg || !rect) return;
+
+  function sizeRing() {
+    var w = btn.offsetWidth  + 10;
+    var h = btn.offsetHeight + 10;
+    svg.setAttribute('width',  w);
+    svg.setAttribute('height', h);
+    rect.setAttribute('width',  w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('x', 0);
+    rect.setAttribute('y', 0);
+    var perimeter = 2 * (w + h);
+    rect.style.strokeDasharray  = perimeter;
+    rect.style.strokeDashoffset = perimeter;
+    svg.style.setProperty('--ring-len', perimeter);
+    return perimeter;
+  }
+  sizeRing();
+
+  var ringActive = false;
+  btn._startRing = function(duur) {
+    if (ringActive) return;
+    ringActive = true;
+    var perimeter = sizeRing();
+    rect.style.transition = 'none';
+    rect.style.strokeDashoffset = perimeter;
+    rect.style.stroke = 'url(#ringGrad)';
+    rect.style.strokeWidth = '2.5';
+    rect.style.opacity = '1';
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        rect.style.transition = 'stroke-dashoffset ' + (duur / 1000).toFixed(2) + 's cubic-bezier(0.4,0,0.2,1)';
+        rect.style.strokeDashoffset = '0';
+      });
+    });
+    setTimeout(function() {
+      rect.style.transition = 'opacity 0.4s ease';
+      rect.style.opacity = '0';
+      setTimeout(function() {
+        rect.style.strokeDashoffset = perimeter;
+        rect.style.opacity = '1';
+        ringActive = false;
+      }, 420);
+    }, duur + 100);
+  };
+}
+
 function downloadInfobord() {
-  var a = document.createElement('a');
-  a.href = '/api/proxy?bestand=infobord';
-  a.download = 'infobord.pptx';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  var btn = document.getElementById('infobordBtn');
+  if (btn && btn._startRing) btn._startRing(2300);
+  setTimeout(function() {
+    var a = document.createElement('a');
+    a.href = '/api/proxy?bestand=infobord';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, 2600);
 }
 
 bouwKnoppen();
 planHerlaad();
 </script>
-  <script defer src="/_vercel/insights/script.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
