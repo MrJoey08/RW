@@ -1,6 +1,9 @@
 {
   "rewrites": [
-    { "source": "/api/links",  "destination": "/api/links.js"  },
-    { "source": "/api/proxy",  "destination": "/api/proxy.js"  }
+    { "source": "/api/links",     "destination": "/api/links.js"    },
+    { "source": "/api/proxy",     "destination": "/api/proxy.js"    },
+    { "source": "/api/feedback",  "destination": "/api/Feedback.js" },
+    { "source": "/ticker.json",   "destination": "/Ticker.json"     },
+    { "source": "/dashboard.json","destination": "/Dashboard.json"  }
   ]
 }
