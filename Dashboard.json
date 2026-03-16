@@ -1,20 +1,29 @@
 {
-  "kolommen": [
+  "links": [
     {
       "titel": "Leerlingen",
       "links": [
-        { "naam": "Somtoday", "url": "https://leerling.somtoday.nl/rooster", "offline": false },
+        { "naam": "Somtoday", "url": "https://som.today/", "offline": false },
         { "naam": "Microsoft 365", "url": "https://m365.cloud.microsoft/apps/", "offline": false },
         { "naam": "AltenaEngels", "url": "https://www.altenaengels.nl/", "offline": false },
-        { "naam": "Kwizl", "url": "https://kwizl.eu/app/student#/", "offline": false },
-        { "naam": "Leerlingen Portaal", "url": "https://leerlingen.altenacollege.nl/", "offline": false }
+        { "naam": "Kwizl", "url": "https://kwizl.eu/app/student#/", "offline": false }
       ]
     },
     {
-      "titel": "Personeel & Ouders",
+      "titel": "Planning",
       "links": [
+        { "naam": "Vakantierooster", "url": "https://www.altenacollege.nl/Onze_school/Praktische_zaken/Vakantierooster", "offline": false },
+        { "naam": "PTA", "url": "https://leerlingen.altenacollege.nl/Portaal/Examen", "offline": false }
+      ]
+    }
+  ],
+  "rechts": [
+    {
+      "titel": "Portalen",
+      "links": [
+        { "naam": "Leerlingen Portaal", "url": "https://leerlingen.altenacollege.nl/", "offline": false },
         { "naam": "Personeel Portaal", "url": "https://personeel.altenacollege.nl/", "offline": false },
-        { "naam": "Ouder Portaal", "url": "https://ouder.altenacollege.nl/", "offline": true }
+        { "naam": "Ouder Portaal", "url": "https://ouder.altenacollege.nl/", "offline": false }
       ]
     },
     {
