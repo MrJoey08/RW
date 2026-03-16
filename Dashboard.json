@@ -23,7 +23,7 @@
       "links": [
         { "naam": "Leerlingen Portaal", "url": "https://leerlingen.altenacollege.nl/", "offline": false },
         { "naam": "Personeel Portaal", "url": "https://personeel.altenacollege.nl/", "offline": false },
-        { "naam": "Ouder Portaal", "url": "https://ouder.altenacollege.nl/", "offline": false }
+        { "naam": "Ouder Portaal", "url": "https://ouder.altenacollege.nl/", "offline": true }
       ]
     },
     {
