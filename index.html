@@ -463,6 +463,57 @@
       height: 16px;
       flex-shrink: 0;
     }
+    /* PC: twee knoppen naast elkaar */
+    .bottom-nav-pc { display: none; }
+    @media (min-width: 768px) {
+      .bottom-nav-mobiel { display: none; }
+      .bottom-nav-pc {
+        display: flex;
+        gap: 0;
+        width: 100%;
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .bottom-nav-pc .bottom-nav-btn {
+        flex: 1;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        color: var(--muted);
+        background: transparent;
+        position: relative;
+        z-index: 1;
+        transition: color 0.3s;
+      }
+      .bottom-nav-pc .bottom-nav-btn.actief {
+        color: var(--accent);
+      }
+      .bottom-nav-pc .bottom-nav-btn.actief .bottom-nav-icon {
+        stroke: var(--accent2);
+      }
+      .bottom-nav-pc .bottom-nav-btn:not(.actief):hover {
+        color: var(--text);
+      }
+      .bottom-nav-slider {
+        position: absolute;
+        top: 3px;
+        bottom: 3px;
+        width: calc(50% - 3px);
+        left: 3px;
+        background: var(--bg);
+        border-radius: 8px;
+        transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 0;
+        box-shadow: 0 0 10px rgba(232,99,74,0.25);
+        border: 1px solid rgba(232,99,74,0.2);
+      }
+      .bottom-nav-slider.rechts {
+        left: calc(50% + 0px);
+      }
+    }
 
     /* ── Portaal pagina ────────────────────────────────────────── */
     .portaal-header {
@@ -573,10 +624,25 @@
 
 <!-- Bottom navigation -->
 <nav class="bottom-nav" id="bottomNav">
-  <button class="bottom-nav-btn" id="navWissel" onclick="gaNaar(huidigSlide === 'rooster' ? 'portaal' : 'rooster')">
-    <svg class="bottom-nav-icon" id="navIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    <span id="navLabel">Dashboard</span>
-  </button>
+  <!-- Mobiel: één wisselknop -->
+  <div class="bottom-nav-mobiel">
+    <button class="bottom-nav-btn" id="navWissel" onclick="gaNaar(huidigSlide === 'rooster' ? 'portaal' : 'rooster')">
+      <svg class="bottom-nav-icon" id="navIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span id="navLabel">Dashboard</span>
+    </button>
+  </div>
+  <!-- PC: twee knoppen -->
+  <div class="bottom-nav-pc">
+    <div class="bottom-nav-slider rechts" id="navSlider"></div>
+    <button class="bottom-nav-btn" id="navPcDashboard" onclick="gaNaar('portaal')">
+      <svg class="bottom-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button class="bottom-nav-btn actief" id="navPcRooster" onclick="gaNaar('rooster')">
+      <svg class="bottom-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Rooster
+    </button>
+  </div>
 </nav>
 
 <div class="slide-viewport">
@@ -1295,16 +1361,25 @@ function gaNaar(doel) {
   var wrapper = document.getElementById('slideWrapper');
   var label = document.getElementById('navLabel');
   var icon = document.getElementById('navIcon');
+  var pcR = document.getElementById('navPcRooster');
+  var pcD = document.getElementById('navPcDashboard');
+  var slider = document.getElementById('navSlider');
   if (doel === 'rooster') {
     wrapper.classList.add('op-rooster');
     wrapper.classList.remove('op-portaal');
     label.textContent = 'Dashboard';
     icon.innerHTML = '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>';
+    pcR.classList.add('actief');
+    pcD.classList.remove('actief');
+    slider.classList.add('rechts');
   } else {
     wrapper.classList.remove('op-rooster');
     wrapper.classList.add('op-portaal');
     label.textContent = 'Rooster';
     icon.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>';
+    pcD.classList.add('actief');
+    pcR.classList.remove('actief');
+    slider.classList.remove('rechts');
   }
   huidigSlide = doel;
 }
