@@ -248,6 +248,7 @@
     footer {
       margin-top: auto;
       padding: 24px;
+      padding-bottom: 72px;
       font-size: 0.75rem;
       color: var(--muted);
       text-align: center;
@@ -420,48 +421,47 @@
       overflow-y: auto;
     }
 
-    /* ── Tab knoppen ───────────────────────────────────────────── */
-    .tab-btn {
+    /* ── Bottom navigation ──────────────────────────────────────── */
+    .bottom-nav {
       position: fixed;
-      top: 50%;
+      bottom: 0;
+      left: 0;
+      right: 0;
       z-index: 100;
+      padding: 12px 24px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+    }
+    .bottom-nav-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
       background: var(--surface);
       border: 1px solid var(--accent);
-      border-radius: 8px;
+      border-radius: 10px;
       color: var(--accent);
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.65rem;
+      font-size: 0.8rem;
       font-weight: 500;
-      letter-spacing: 0.2em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       cursor: pointer;
-      padding: 36px 10px;
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-      transition: color 0.2s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      transition: all 0.25s;
       -webkit-appearance: none;
       appearance: none;
       -webkit-tap-highlight-color: transparent;
-      box-shadow: 0 0 12px rgba(232,99,74,0.35), 0 0 4px rgba(212,90,114,0.25);
+      box-shadow: 0 0 12px rgba(232,99,74,0.3), 0 0 4px rgba(212,90,114,0.2);
     }
-    .tab-btn:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 18px rgba(232,99,74,0.5), 0 0 6px rgba(212,90,114,0.35); }
-
-    /* Portaal knop rechts, rooster knop links — voor mobiel */
-    #tabNaarPortaal { right: 12px; transform: translateY(-50%) rotate(180deg); }
-    #tabNaarRooster { left: 12px;  transform: translateY(-50%); }
-
-    /* PC: na DOM-swap is portaal links en rooster rechts */
-    @media (min-width: 768px) {
-      #tabNaarPortaal { right: auto; left: 12px; }
-      #tabNaarRooster { left: auto; right: 12px; }
+    .bottom-nav-btn:hover {
+      box-shadow: 0 0 18px rgba(232,99,74,0.45), 0 0 6px rgba(212,90,114,0.3);
+      border-color: var(--accent2);
     }
-    @media (max-width: 767px) {
-      .tab-btn { padding: 28px 7px; font-size: 0.55rem; letter-spacing: 0.15em; }
-    }
-    @media (min-width: 768px) {
-      .tab-btn { top: 52px; transform: none; writing-mode: horizontal-tb; text-orientation: initial; padding: 16px 26px; font-size: 0.7rem; }
-      #tabNaarPortaal { right: auto; left: 20px; transform: none; }
-      #tabNaarRooster { left: auto; right: 20px; transform: none; }
+    .bottom-nav-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
     }
 
     /* ── Portaal pagina ────────────────────────────────────────── */
@@ -571,10 +571,13 @@
 </head>
 <body>
 
-<!-- Tab knop: naar rooster -->
-<button class="tab-btn" id="tabNaarRooster" onclick="gaNaar('rooster')">Roosterwijzigingen</button>
-<!-- Tab knop: naar portaal -->
-<button class="tab-btn" id="tabNaarPortaal" onclick="gaNaar('portaal')" style="display:none">Dashboard</button>
+<!-- Bottom navigation -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bottom-nav-btn" id="navWissel" onclick="gaNaar(huidigSlide === 'rooster' ? 'portaal' : 'rooster')">
+    <svg class="bottom-nav-icon" id="navIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span id="navLabel">Dashboard</span>
+  </button>
+</nav>
 
 <div class="slide-viewport">
 <div class="slide-wrapper" id="slideWrapper">
@@ -606,9 +609,6 @@
         <rect id="ringRect" rx="13" ry="13"/>
       </svg>
     </div>
-    <a class="date-btn" href="https://www.altenacollege.nl/Onze_school/Praktische_zaken/Vakantierooster" target="_blank" rel="noopener" style="text-decoration:none;text-align:center;display:block">
-      <span>Vakantierooster</span>
-    </a>
   </div>
   <div class="pdf-container" id="pdfContainer">
     <div class="pdf-header">
@@ -1135,20 +1135,29 @@ fetch('/ticker.json?' + Date.now())
 
 // ── Dashboard links laden ─────────────────────────────────────
 var defaultDashboard = {
-  kolommen: [
+  links: [
     {
       titel: "Leerlingen",
       links: [
         { naam: "Somtoday", url: "https://som.today/", offline: false },
         { naam: "Microsoft 365", url: "https://m365.cloud.microsoft/apps/", offline: false },
         { naam: "AltenaEngels", url: "https://www.altenaengels.nl/", offline: false },
-        { naam: "Kwizl", url: "https://kwizl.eu/app/student#/", offline: false },
-        { naam: "Leerlingen Portaal", url: "https://leerlingen.altenacollege.nl/", offline: false }
+        { naam: "Kwizl", url: "https://kwizl.eu/app/student#/", offline: false }
       ]
     },
     {
-      titel: "Personeel & Ouders",
+      titel: "Planning",
       links: [
+        { naam: "Vakantierooster", url: "https://www.altenacollege.nl/Onze_school/Praktische_zaken/Vakantierooster", offline: false },
+        { naam: "PTA", url: "https://leerlingen.altenacollege.nl/Portaal/Examen", offline: false }
+      ]
+    }
+  ],
+  rechts: [
+    {
+      titel: "Portalen",
+      links: [
+        { naam: "Leerlingen Portaal", url: "https://leerlingen.altenacollege.nl/", offline: false },
         { naam: "Personeel Portaal", url: "https://personeel.altenacollege.nl/", offline: false },
         { naam: "Ouder Portaal", url: "https://ouder.altenacollege.nl/", offline: false }
       ]
@@ -1168,39 +1177,40 @@ function bouwDashboard(data) {
   if (!grid) return;
   grid.innerHTML = '';
 
-  // Groepeer kolommen in links (eerste) en rechts (rest)
   var linksKolom = document.createElement('div');
   linksKolom.className = 'portaal-kolom portaal-kolom-links';
   var rechtsKolom = document.createElement('div');
   rechtsKolom.className = 'portaal-kolom portaal-kolom-rechts';
 
-  data.kolommen.forEach(function(kolom, ki) {
-    var target = ki === 0 ? linksKolom : rechtsKolom;
+  function vulKolom(target, secties) {
+    secties.forEach(function(sectie, si) {
+      var label = document.createElement('div');
+      label.className = 'portaal-sectie-label';
+      if (si > 0) label.style.marginTop = '8px';
+      label.textContent = sectie.titel;
+      target.appendChild(label);
 
-    var label = document.createElement('div');
-    label.className = 'portaal-sectie-label';
-    if (ki > 1) label.style.marginTop = '8px';
-    label.textContent = kolom.titel;
-    target.appendChild(label);
-
-    kolom.links.forEach(function(link) {
-      var isOffline = link.offline === true;
-
-      if (isOffline) {
-        var el = document.createElement('div');
-        el.className = 'portaal-link offline';
-        el.innerHTML = '<span>' + link.naam + '</span><span class="portaal-link-status">offline</span>';
-      } else {
-        var el = document.createElement('a');
-        el.className = 'portaal-link';
-        el.href = link.url;
-        el.target = '_blank';
-        el.rel = 'noopener';
-        el.innerHTML = '<span>' + link.naam + '</span><span class="portaal-link-arrow">↗</span>';
-      }
-      target.appendChild(el);
+      sectie.links.forEach(function(link) {
+        var isOffline = link.offline === true;
+        if (isOffline) {
+          var el = document.createElement('div');
+          el.className = 'portaal-link offline';
+          el.innerHTML = '<span>' + link.naam + '</span><span class="portaal-link-status">offline</span>';
+        } else {
+          var el = document.createElement('a');
+          el.className = 'portaal-link';
+          el.href = link.url;
+          el.target = '_blank';
+          el.rel = 'noopener';
+          el.innerHTML = '<span>' + link.naam + '</span><span class="portaal-link-arrow">↗</span>';
+        }
+        target.appendChild(el);
+      });
     });
-  });
+  }
+
+  vulKolom(linksKolom, data.links);
+  vulKolom(rechtsKolom, data.rechts);
 
   grid.appendChild(linksKolom);
   grid.appendChild(rechtsKolom);
@@ -1209,7 +1219,7 @@ function bouwDashboard(data) {
 fetch('/dashboard.json?' + Date.now())
   .then(function(r) { return r.json(); })
   .then(function(data) {
-    if (data && data.kolommen && data.kolommen.length > 0) {
+    if (data && data.links && data.rechts) {
       bouwDashboard(data);
     } else {
       bouwDashboard(defaultDashboard);
@@ -1282,19 +1292,19 @@ var huidigSlide = null;
 
 
 function gaNaar(doel) {
-  var wrapper    = document.getElementById('slideWrapper');
-  var tabRooster = document.getElementById('tabNaarRooster');
-  var tabPortaal = document.getElementById('tabNaarPortaal');
+  var wrapper = document.getElementById('slideWrapper');
+  var label = document.getElementById('navLabel');
+  var icon = document.getElementById('navIcon');
   if (doel === 'rooster') {
     wrapper.classList.add('op-rooster');
     wrapper.classList.remove('op-portaal');
-    tabRooster.style.display = 'none';
-    tabPortaal.style.display = 'block';
+    label.textContent = 'Dashboard';
+    icon.innerHTML = '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>';
   } else {
     wrapper.classList.remove('op-rooster');
     wrapper.classList.add('op-portaal');
-    tabPortaal.style.display = 'none';
-    tabRooster.style.display = 'block';
+    label.textContent = 'Rooster';
+    icon.innerHTML = '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>';
   }
   huidigSlide = doel;
 }
