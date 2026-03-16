@@ -452,14 +452,16 @@
 
     /* PC: na DOM-swap is portaal links en rooster rechts */
     @media (min-width: 768px) {
-      #tabNaarPortaal { right: auto; left: 12px; transform: translateY(-50%); }
-      #tabNaarRooster { left: auto; right: 12px; transform: translateY(-50%) rotate(180deg); }
+      #tabNaarPortaal { right: auto; left: 12px; }
+      #tabNaarRooster { left: auto; right: 12px; }
     }
     @media (max-width: 767px) {
       .tab-btn { padding: 28px 7px; font-size: 0.55rem; letter-spacing: 0.15em; }
     }
     @media (min-width: 768px) {
-      .tab-btn { padding: 0 10px; height: 70vh; display: flex; align-items: center; justify-content: center; }
+      .tab-btn { top: 52px; transform: none; writing-mode: horizontal-tb; text-orientation: initial; padding: 12px 20px; font-size: 0.7rem; }
+      #tabNaarPortaal { right: auto; left: 20px; transform: none; }
+      #tabNaarRooster { left: auto; right: 20px; transform: none; }
     }
 
     /* ── Portaal pagina ────────────────────────────────────────── */
