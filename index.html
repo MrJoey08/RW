@@ -157,8 +157,10 @@
       border-radius: 12px;
       overflow: hidden;
       background: var(--surface);
+      transition: opacity 0.35s ease, transform 0.35s ease;
     }
     .pdf-container.visible { display: block; }
+    .pdf-container.sluiten { opacity: 0; transform: translateY(-20px); }
     .pdf-header {
       display: flex;
       align-items: center;
@@ -217,7 +219,10 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
+      transition: opacity 0.35s ease, transform 0.35s ease;
     }
+    .pdf-mobiel-container.visible { display: block; }
+    .pdf-mobiel-container.sluiten { opacity: 0; transform: translateY(-20px); }
     .pdf-mobiel-container.visible { display: block; }
     .pdf-mobiel-body {
       position: relative;
@@ -1059,28 +1064,42 @@ function openPdf(btn) {
   }
 }
 
-function closePdf() {
-  document.getElementById('pdfContainer').classList.remove('visible');
-  document.getElementById('pdfMobielContainer').classList.remove('visible');
-  document.getElementById('pdfPaginas').innerHTML = '';
-  document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
-  var frame = document.getElementById('pdfFrame');
-  frame.classList.remove('geladen');
-  frame.src = '';
+function closePdf(instant) {
+  var pc = document.getElementById('pdfContainer');
+  var mobiel = document.getElementById('pdfMobielContainer');
 
-  // Scroll terug naar boven
-  window.scrollTo(0, 0);
-  var sr = document.getElementById('slideRooster');
-  sr.scrollTo(0, 0);
-  document.querySelector('.slide-viewport').scrollTo(0, 0);
+  function opruimen() {
+    pc.classList.remove('visible', 'sluiten');
+    mobiel.classList.remove('visible', 'sluiten');
+    document.getElementById('pdfPaginas').innerHTML = '';
+    document.querySelectorAll('.date-btn').forEach(function(b) { b.classList.remove('active'); });
+    var frame = document.getElementById('pdfFrame');
+    frame.classList.remove('geladen');
+    frame.src = '';
 
-  // Herstel alle overrides
-  sr.style.overflow = '';
-  sr.style.height = '';
-  document.documentElement.style.height = '';
-  document.body.style.height = '';
+    window.scrollTo(0, 0);
+    var sr = document.getElementById('slideRooster');
+    sr.scrollTo(0, 0);
+    document.querySelector('.slide-viewport').scrollTo(0, 0);
 
-  activePdfMap = null;
+    sr.style.overflow = '';
+    sr.style.height = '';
+    document.documentElement.style.height = '';
+    document.body.style.height = '';
+
+    activePdfMap = null;
+  }
+
+  if (instant) {
+    opruimen();
+    return;
+  }
+
+  // Animatie: fade + slide omhoog
+  if (pc.classList.contains('visible')) pc.classList.add('sluiten');
+  if (mobiel.classList.contains('visible')) mobiel.classList.add('sluiten');
+
+  setTimeout(opruimen, 350);
 }
 
 function initRing() {
@@ -1361,6 +1380,11 @@ var huidigSlide = null;
 
 
 function gaNaar(doel) {
+  // Als er een PDF open staat en we gaan weg van rooster, sluit instant
+  if (activePdfMap && doel !== 'rooster') {
+    closePdf(true);
+  }
+
   var wrapper = document.getElementById('slideWrapper');
   var label = document.getElementById('navLabel');
   var icon = document.getElementById('navIcon');
