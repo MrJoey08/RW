@@ -3,7 +3,7 @@
     {
       "titel": "Leerlingen",
       "links": [
-        { "naam": "Somtoday", "url": "https://som.today/", "offline": false },
+        { "naam": "Somtoday", "url": "https://leerling.somtoday.nl/login", "offline": false },
         { "naam": "Microsoft 365", "url": "https://m365.cloud.microsoft/apps/", "offline": false },
         { "naam": "AltenaEngels", "url": "https://www.altenaengels.nl/", "offline": false },
         { "naam": "Kwizl", "url": "https://kwizl.eu/app/student#/", "offline": false }
