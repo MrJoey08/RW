@@ -1,6 +1,6 @@
 const https = require('https');
 
-const ORIGIN = 'rw.acits.nl';
+const ORIGIN = 'rw.altenacollege.nl';
 
 function haalOp(path) {
   return new Promise((resolve, reject) => {
