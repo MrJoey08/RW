@@ -22,19 +22,31 @@ function haalOp(path) {
   });
 }
 
-async function vindPdf(map) {
-  const { body } = await haalOp(`/${map}/`);
-  const html = body.toString('utf8');
-  const m = html.match(/href="([^"]*\.pdf)"/i) || html.match(/([\w%.\-]+\.pdf)/i);
-  return m ? decodeURIComponent(m[1].split('/').pop()) : null;
+// Haalt eventueel protocol+domein en een beginnende "/" van een href af,
+// zodat het niet uitmaakt of de link relatief, root-relatief of absoluut is.
+function normaliseerPad(ruwPad) {
+  return ruwPad.replace(/^https?:\/\/[^/]+\//i, '').replace(/^\//, '');
 }
 
-async function vindPptx() {
+// Zoekt op de homepagina zelf naar het volledige pad van het bestand in de
+// gegeven map ('vandaag' of 'morgen'). We gebruiken de homepagina i.p.v. een
+// los mapoverzicht (bijv. /vandaag/), omdat die laatste op sommige hosts
+// (zoals de huidige) geen directory listing teruggeeft.
+async function vindBestand(map) {
   const { body } = await haalOp('/');
   const html = body.toString('utf8');
-  // Haal het volledige pad op, bijv. "info/Week 11.pptx"
-  const m = html.match(/href="([^"?#]*\.pptx)"/i);
-  return m ? decodeURIComponent(m[1]) : 'info/infobord.pptx';
+  const regex = new RegExp('href="([^"]*' + map + '/[^"]+\\.pdf)"', 'i');
+  const m = html.match(regex);
+  return m ? normaliseerPad(m[1]) : null;
+}
+
+// Zoekt op de homepagina naar het infobord-bestand. Dit kan een .pdf of een
+// .pptx zijn — de school wisselt dit formaat weleens.
+async function vindInfobord() {
+  const { body } = await haalOp('/');
+  const html = body.toString('utf8');
+  const m = html.match(/href="([^"]*info\/[^"]+\.(?:pdf|pptx))"/i);
+  return m ? normaliseerPad(m[1]) : null;
 }
 
 module.exports = async (req, res) => {
@@ -45,11 +57,13 @@ module.exports = async (req, res) => {
   try {
     // ── PDF: ?map=vandaag of ?map=morgen ────────────────────────────
     if (map && ['vandaag', 'morgen'].includes(map)) {
-      const naam = await vindPdf(map);
-      if (!naam) return res.status(404).json({ error: `Geen PDF in /${map}/` });
+      const pad = await vindBestand(map);
+      if (!pad) return res.status(404).json({ error: `Geen PDF in /${map}/` });
 
-      const upstream = await haalOp(`/${map}/${encodeURIComponent(naam)}`);
+      const upstream = await haalOp('/' + encodeURI(pad));
       if (upstream.status === 404) return res.status(404).json({ error: 'PDF niet gevonden' });
+
+      const naam = pad.split('/').pop();
 
       // ETag gebaseerd op bestandsnaam + last-modified zodat browser
       // wijzigingen detecteert zonder de inhoud opnieuw te downloaden
@@ -70,13 +84,21 @@ module.exports = async (req, res) => {
       return res.status(200).end(upstream.body);
     }
 
-    // ── PPTX: ?bestand=infobord ──────────────────────────────────────
+    // ── Infobord: ?bestand=infobord ──────────────────────────────────
     if (bestand === 'infobord') {
-      const pad  = await vindPptx();               // bijv. "info/Week 11.pptx"
-      const naam = pad.split('/').pop();            // bijv. "Week 11.pptx"
+      const pad = await vindInfobord();
+      if (!pad) return res.status(404).json({ error: 'Infobord niet gevonden' });
+
+      const naam = pad.split('/').pop();
       const upstream = await haalOp('/' + encodeURI(pad));
       if (upstream.status === 404) return res.status(404).json({ error: 'Infobord niet gevonden' });
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+
+      const ext = (naam.split('.').pop() || '').toLowerCase();
+      const contentType = ext === 'pdf'
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+      res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Disposition', 'attachment; filename="' + naam + '"');
       res.setHeader('Cache-Control', 'public, max-age=3600');
       return res.status(200).end(upstream.body);
